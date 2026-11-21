@@ -1,0 +1,50 @@
+name: Owner v150 REAL unsigned handoff for offline signing
+on:
+  push:
+    branches: [feature/owner-v150-consolidation-20261121]
+    paths: ['.github/workflows/owner-v150-build-unsigned-handoff.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compile-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 80
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify exact owner source
+        run: |
+          python3 scripts/verify_owner_v150_full_source_lock.py
+          python3 scripts/verify_owner_v150_assets.py
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-35 build-tools;35.0.0'
+      - name: Build true release APK without embedding owner keystore
+        run: |
+          set -euo pipefail
+          sed -i '/^[[:space:]]*signingConfig signingConfigs.release[[:space:]]*$/d' app/build.gradle
+          gradle --no-daemon :app:assembleRelease
+          apk=app/build/outputs/apk/release/app-release-unsigned.apk
+          test -s "$apk"
+          mkdir -p handoff
+          cp "$apk" handoff/PMM-v150-REAL-UNSIGNED.apk
+          cp "$ANDROID_HOME/build-tools/35.0.0/lib/apksigner.jar" handoff/apksigner.jar
+          cp "$ANDROID_HOME/build-tools/35.0.0/zipalign" handoff/zipalign
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk" > handoff/package-metadata.txt
+          sha256sum handoff/PMM-v150-REAL-UNSIGNED.apk > handoff/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PMM-v150-REAL-UNSIGNED-FOR-LOCAL-SIGNING
+          path: handoff/
+          if-no-files-found: error
+          retention-days: 7
