@@ -53,7 +53,7 @@ function httpsMedia(value) {
        ((url.hostname==='aparat.com'||url.hostname==='www.aparat.com')&&/^\/v\/[a-zA-Z0-9_-]+\/?$/.test(url.pathname)));
   }catch(_){return false}
 }
-function validText(value,min,max){return typeof value==='string'&&value.trim().length>=min&&value.length<=max}
+function validOwnerVideo(value){try{const u=new URL(value);return u.protocol==='https:'&&u.hostname==='dl.kazeminia110.ir'&&!u.username&&!u.password&&!u.port&&/^\\/Video\\/video-clip\\/video-clip(?:%20| )?[0-9]{1,5}\\.mp4$/i.test(u.pathname)}catch(_){return false}}\nfunction validText(value,min,max){return typeof value==='string'&&value.trim().length>=min&&value.length<=max}
 function normalizeItem(item,origin){
   if(!item||typeof item!=='object'||!SECTIONS.has(item.section)||!validText(item.title,2,180))throw Error('عنوان یا بخش معتبر نیست.');
   const section=item.section;
@@ -66,8 +66,13 @@ function normalizeItem(item,origin){
     if(image.origin!==origin||!/^\/media\/[a-f0-9-]{36}$/.test(image.pathname))throw Error('تصویر باید از پنل مدیریت بارگذاری شود.');
     result.url=image.href;
   }else{
-    if(!httpsMedia(item.url))throw Error('فقط پیوندهای معتبر ایتا یا آپارات پذیرفته می‌شوند.');
+    if(!httpsMedia(item.url)&&!(section==='videos'&&validOwnerVideo(item.url)))throw Error('لینک کلیپ باید ایتا، آپارات یا MP4 مالک باشد.');
     result.url=item.url;
+    if(section==='videos'&&item.coverUrl){
+      let cover;try{cover=new URL(item.coverUrl)}catch(_){throw Error('کاور نامعتبر است.')}
+      if(cover.origin!==origin||!/^\/media\/[a-f0-9-]{36}$/.test(cover.pathname))throw Error('کاور باید در پنل بارگذاری شود.');
+      result.coverUrl=cover.href;
+    }
   }
   return result;
 }
@@ -160,9 +165,9 @@ export default {
         await env.PMM_CONTENT.put(KEY,JSON.stringify(next));
         // A deleted photo should not consume the owner's limited free KV storage.
         const removed=old.items.find(item=>item.id===body.id);
-        if(removed?.section==='photo_quotes'){
+        if(removed?.section==='photo_quotes'||removed?.coverUrl){
           try{
-            const uri=new URL(removed.url);
+            const uri=new URL(removed.coverUrl||removed.url);
             if(uri.origin===u.origin && /^\/media\/[a-f0-9-]{36}$/.test(uri.pathname)){
               await env.PMM_CONTENT.delete(MEDIA_PREFIX+uri.pathname.slice(7));
             }
