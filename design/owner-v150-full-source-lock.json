@@ -421,7 +421,7 @@
     "build.gradle": "6560319a0e65c6c91279ce4a5c41262a17a81540",
     "gradle.properties": "fb1a08d290b24dd0c275336ae8d8f59f5137b63f",
     "online-content/admin-page.js": "38d78a79e3bb15ccf68d03e34f064d4f50781d98",
-    "online-content/cloudflare-dashboard-single-file.js": "3f52287c202f35de25e5115ca13fa821223154d6",
+    "online-content/cloudflare-dashboard-single-file.js": "25a8b5f48aca2d9f1afaaec38b77231e88493df2",
     "online-content/README_FA.md": "96b59cd0c658b6ae96779e388c2e506f870ed372",
     "online-content/worker.js": "da41ae0e090d04f7c390873d2d85c2451a21de4f",
     "online-content/wrangler.toml": "b0bb92f3c7180842f0944c748f7c47884c67f6ad",
