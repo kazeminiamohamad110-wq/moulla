@@ -1,2 +1,2 @@
-# Only the repository owner may authorize changes to any frozen UI section.
-* @Salmanzadeh-ir
+# Owner review is required for frozen runtime, native code and build settings.
+* @kazeminiamohamad110-wq
