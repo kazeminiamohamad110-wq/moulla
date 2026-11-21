@@ -51,7 +51,7 @@ final class PmmMediaSaver {
         try {
             Uri uri = Uri.parse(value);
             return isPlainHttps(uri) && OWNER_VIDEO_HOST.equalsIgnoreCase(uri.getHost()) &&
-                uri.getPath() != null && uri.getPath().matches("(?i)^/(?:[a-zA-Z0-9_.-]+/)*[a-zA-Z0-9_.-]+\\.mp4$");
+                uri.getPath() != null && uri.getPath().matches("(?i)^/(?:[a-zA-Z0-9_.-]+/)*[a-zA-Z0-9_. -]+\\.mp4$");
         } catch (Exception ignored) { return false; }
     }
 

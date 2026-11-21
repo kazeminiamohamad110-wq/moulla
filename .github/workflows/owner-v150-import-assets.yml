@@ -1,0 +1,35 @@
+name: Owner v150 import verified runtime assets
+on:
+  push:
+    branches:
+      - feature/owner-v150-consolidation-20261121
+    paths:
+      - 'imports/v150/v150-runtime-delta.zip'
+permissions:
+  contents: write
+jobs:
+  verify-and-import:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate and apply only verified owner v150 runtime assets
+        run: |
+          set -euo pipefail
+          python3 scripts/import_owner_v150_assets.py imports/v150/v150-runtime-delta.zip
+          python3 scripts/verify_owner_v150_assets.py
+          git diff --check
+      - name: Commit verified runtime to the SAME trial branch
+        run: |
+          set -euo pipefail
+          git config user.name "pmm-v150-owner-ci"
+          git config user.email "pmm-v150-owner-ci@users.noreply.github.com"
+          git add app/src/main/assets docs/OWNER_V150_RUNTIME_SHA256.json
+          git rm -- imports/v150/v150-runtime-delta.zip
+          git commit -m "source(v150): integrate verified 395 runtime files and 201 posters"
+          git push origin "HEAD:refs/heads/feature/owner-v150-consolidation-20261121"

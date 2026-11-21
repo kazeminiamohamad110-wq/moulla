@@ -1,0 +1,70 @@
+name: Owner v150 REAL Gradle release candidate - manual
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-real-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Strict content-preservation gate
+        run: python3 scripts/verify_owner_v150_assets.py
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-35 build-tools;35.0.0'
+      - name: Restore owner signing key from repository secrets
+        env:
+          STORE_B64: ${{ secrets.PMM_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          test -n "$STORE_B64"
+          umask 077
+          printf '%s' "$STORE_B64" | base64 --decode > "$RUNNER_TEMP/pmm-release.p12"
+      - name: Build REAL signed Android release from source
+        env:
+          PMM_KEYSTORE_PATH: ${{ runner.temp }}/pmm-release.p12
+          PMM_KEYSTORE_PASSWORD: ${{ secrets.PMM_KEYSTORE_PASSWORD }}
+          PMM_KEY_PASSWORD: ${{ secrets.PMM_KEY_PASSWORD }}
+          PMM_KEYSTORE_ALIAS: payemenbaremola-release
+        run: |
+          set -euo pipefail
+          test -n "$PMM_KEYSTORE_PASSWORD"
+          gradle --no-daemon :app:assembleRelease
+      - name: Verify package and release signature
+        run: |
+          set -euo pipefail
+          apk=app/build/outputs/apk/release/app-release.apk
+          test -s "$apk"
+          bt="$ANDROID_HOME/build-tools/35.0.0"
+          "$bt/apksigner" verify --verbose --print-certs "$apk" | tee release-signature.txt
+          grep -iq '7359f6213b02ff7fec96faa4b0496e174690e81db277d45e5de2495a9e38f624' release-signature.txt
+          "$bt/zipalign" -c -v 4 "$apk"
+          "$bt/aapt" dump badging "$apk" | tee release-package.txt
+          grep -q "name='ir.nahj.towhidkarbordi'" release-package.txt
+          grep -q "versionCode='150'" release-package.txt
+          sha256sum "$apk" > SHA256SUMS-v150-release.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PMM-v150-REAL-GRADLE-RELEASE-CANDIDATE
+          path: |
+            app/build/outputs/apk/release/app-release.apk
+            SHA256SUMS-v150-release.txt
+            release-package.txt
+            release-signature.txt
+          if-no-files-found: error
+          retention-days: 30
+      - name: Securely remove temporary key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/pmm-release.p12"
