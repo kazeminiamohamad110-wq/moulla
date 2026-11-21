@@ -1505,9 +1505,16 @@ html,body{height:100%;margin:0;padding:0!important;overflow:hidden;background:#1
  border-radius:13px;background:#fff7dd;color:#07376f;text-align:right}
 #offline-course-scroll .course-reminder-setting label{display:block;margin-bottom:6px;
  font:900 clamp(11px,1.85cqw,16px)/1.7 'PMM Estedad',Tahoma,sans-serif}
-#offline-course-scroll #course-reminder-time{display:block;direction:ltr;text-align:center;width:min(100%,170px);
- min-height:44px;box-sizing:border-box;border:2px solid #bb8733;border-radius:9px;
- background:#fffdf3;color:#07376f;font:800 17px/1.4 Tahoma,sans-serif}
+/* v141: numeric digital hour/minute keyboard, no Android analog time picker. */
+#offline-course-scroll .course-digital-time{display:flex;direction:ltr;align-items:center;justify-content:center;
+ gap:clamp(6px,1.5cqw,14px);max-width:220px;margin:4px auto 7px;}
+#offline-course-scroll .course-digital-time input{display:block;box-sizing:border-box;width:clamp(57px,11cqw,76px);
+ min-height:48px;max-width:42%;padding:5px 4px;border:2px solid #bb8733;border-radius:9px;
+ background:#fffdf3;color:#07376f;font:900 clamp(19px,3.6cqw,27px)/1.35 Tahoma,sans-serif;
+ direction:ltr;text-align:center;font-variant-numeric:tabular-nums;}
+#offline-course-scroll .course-digital-time input:focus-visible{outline:3px solid #086dab;outline-offset:2px;}
+#offline-course-scroll .course-digital-colon{color:#07376f;font:900 clamp(22px,4cqw,30px)/1 Tahoma,sans-serif;
+ user-select:none;pointer-events:none;}
 #offline-course-scroll .course-reminder-setting p{margin:7px 0 0;
  font:600 clamp(10px,1.5cqw,13px)/1.9 'PMM Estedad',Tahoma,sans-serif}
 
@@ -1591,10 +1598,10 @@ html,body{height:100%;margin:0;padding:0!important;overflow:hidden;background:#1
   display:block!important;
   position:absolute!important;
   box-sizing:border-box!important;
-  width:400%!important;
-  height:400%!important;
-  left:-150%!important;
-  top:-150%!important;
+  width:200%!important;
+  height:200%!important;
+  left:-50%!important;
+  top:-50%!important;
   border:0!important;
   padding:0!important;
   margin:0!important;
@@ -1637,8 +1644,8 @@ html,body{height:100%;margin:0;padding:0!important;overflow:hidden;background:#1
 }
 #stage .nahj-audio-group {
  box-sizing:border-box!important;display:block!important;
- position:relative!important;width:clamp(124px,37cqw,195px)!important;
- max-width:100%!important;min-width:0!important;height:auto!important;
+ position:relative!important;width:clamp(126px,36cqw,190px)!important;
+ max-width:100%!important;min-width:0!important;height:clamp(126px,36cqw,190px)!important;
  min-height:0!important;aspect-ratio:1/1!important;
  margin:0 auto!important;padding:0!important;border:0!important;
  border-radius:0!important;background-color:transparent!important;
@@ -1659,6 +1666,498 @@ html,body{height:100%;margin:0;padding:0!important;overflow:hidden;background:#1
 #stage .nahj-audio-group .nahj-audio-group-copy {
  display:none!important;
 }
+
+
+/* Owner v137 trial: exact one-column, equal-size devotional artwork.
+ * Changes appearance only; existing button elements, aria-labels,
+ * touch-feedback and data-menu navigation remain untouched. */
+#scene #home-submenu-learning .home-submenu-grid {
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-rows:repeat(2,minmax(0,1fr))!important;
+  justify-items:center!important;
+  align-items:center!important;
+  gap:clamp(8px,1.6cqw,14px)!important;
+}
+#scene #home-submenu-learning .home-submenu-card {
+  display:flex!important;
+  box-sizing:border-box!important;
+  width:clamp(126px,36cqw,190px)!important;
+  height:clamp(126px,36cqw,190px)!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  aspect-ratio:1/1!important;
+  padding:0!important;
+  margin:0 auto!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+  align-items:center!important;
+  justify-content:center!important;
+}
+#scene #home-submenu-learning .home-submenu-card::before,
+#scene #home-submenu-learning .home-submenu-card::after {
+  display:none!important;
+  content:none!important;
+}
+#scene #home-submenu-learning .home-menu-icon-wrap.is-devotional {
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  flex:0 0 100%!important;
+  max-width:100%!important;
+  border:0!important;
+  box-shadow:none!important;
+  background:transparent!important;
+  border-radius:0!important;
+}
+#scene #home-submenu-learning .home-menu-icon.devotional-logo {
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  object-fit:contain!important;
+  filter:none!important;
+}
+/* Lettering is already part of the owner-provided PNG art. Keep accessible
+ * aria-labels on original buttons; suppress only duplicate visual captions. */
+#scene #home-submenu-learning .home-submenu-card .home-menu-title {
+  display:none!important;
+}
+
+
+/* Owner v139: image-only media choices stacked vertically with identical
+ * visible dimensions, while original data-menu handlers and aria-labels remain. */
+#scene #home-submenu-media .home-submenu-grid {
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-rows:repeat(2,minmax(0,1fr))!important;
+  justify-items:center!important;
+  align-items:center!important;
+  gap:clamp(8px,1.6cqw,14px)!important;
+}
+#scene #home-submenu-media .home-submenu-card {
+  position:relative!important;display:flex!important;box-sizing:border-box!important;
+  width:clamp(126px,36cqw,190px)!important;
+  height:clamp(126px,36cqw,190px)!important;
+  max-width:100%!important;max-height:100%!important;
+  aspect-ratio:1/1!important;
+  margin:0 auto!important;padding:0!important;
+  border:0!important;border-radius:0!important;box-shadow:none!important;
+  background-color:transparent!important;background-position:center!important;
+  background-size:contain!important;background-repeat:no-repeat!important;
+  overflow:visible!important;
+}
+#scene #home-submenu-media .home-submenu-card::before,
+#scene #home-submenu-media .home-submenu-card::after {
+  display:none!important;content:none!important;
+}
+#scene #home-submenu-media .home-submenu-card[data-menu="photo_quotes"] {
+  background-image:url("images/pmm_owner_photo_quotes_v138.png")!important;
+}
+#scene #home-submenu-media .home-submenu-card[data-menu="videos"] {
+  background-image:url("images/pmm_owner_clips_v138.png")!important;
+}
+/* Text already appears in each owner's artwork. Only duplicate visual
+ * elements are hidden; original semantic buttons and click actions stay. */
+#scene #home-submenu-media .home-submenu-card .home-menu-icon-wrap,
+#scene #home-submenu-media .home-submenu-card .home-menu-title {
+  display:none!important;
+}
+
+
+/* Owner v140: no decorative top star in Tafal/Course entry cards.
+   Put the original heading at the top inside the existing frame.
+   All buttons, text, business logic, routes and IDs stay unchanged. */
+#scene #wisdom-scroll .wisdom-intro {
+  padding-top:clamp(3px,.8cqw,7px)!important;
+}
+#scene #wisdom-scroll .wisdom-intro .intention-message {
+  margin-top:0!important;
+}
+#scene #offline-course-scroll .course-panel.course-welcome,
+#scene #offline-course-scroll .course-panel.course-setup,
+#scene #offline-course-scroll .course-panel.course-no-due,
+#scene #offline-course-scroll .course-panel.course-complete {
+  padding-top:clamp(3px,.8cqw,7px)!important;
+}
+#scene #offline-course-scroll .course-welcome > .course-heading,
+#scene #offline-course-scroll .course-setup > .course-heading,
+#scene #offline-course-scroll .course-no-due > h3,
+#scene #offline-course-scroll .course-complete > h3 {
+  margin-top:0!important;
+}
+
+
+/* Owner v143 — same 9:16 rotating frames; poster-only content until explicit Play. */
+#stage .pmm-clips-panel{font-family:var(--pmm-text-font)!important}
+#stage .pmm-wheel-clip-placeholder{pointer-events:auto!important;gap:4%!important;padding:4.5%!important;
+ justify-content:center!important;transition:opacity .24s ease,visibility .24s ease}
+#stage .pmm-wheel-clip-start{flex:0 0 auto;display:grid;place-items:center;border:0!important;
+ width:52%;aspect-ratio:1;background:transparent!important;padding:0;cursor:pointer;touch-action:manipulation}
+#stage .pmm-wheel-clip-start:focus-visible{outline:3px solid #fff5cd;outline-offset:3px;border-radius:50%}
+#stage .pmm-wheel-clip-start .pmm-wheel-clip-icon{width:100%;height:100%;font-family:var(--pmm-text-font)}
+#stage .pmm-wheel-clip-copy{width:100%;max-height:65%;min-height:0;display:flex;flex-direction:column;
+ align-items:center;justify-content:flex-start;gap:4px;overflow-y:auto;overflow-x:hidden;
+ overflow-wrap:anywhere;direction:rtl;text-align:center;font-family:var(--pmm-text-font)!important;
+ scrollbar-width:thin;overscroll-behavior:contain;user-select:text;-webkit-user-select:text}
+#stage .pmm-wheel-clip-copy[hidden]{display:none!important}
+#stage .pmm-wheel-clip-title{font:900 clamp(11px,2.6cqw,19px)/1.55 var(--pmm-text-font)!important;
+ color:#07396c;text-align:center;white-space:normal;word-break:normal}
+#stage .pmm-wheel-clip-tags{font:750 clamp(9px,2.1cqw,14px)/1.8 var(--pmm-text-font)!important;
+ color:#28476a;text-align:center;direction:rtl;white-space:normal;overflow-wrap:anywhere}
+#stage .pmm-wheel-board.pmm-clip-video-active .pmm-wheel-clip-placeholder{opacity:0!important;visibility:hidden!important}
+#stage .pmm-wheel-clip-video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
+ background:#05080b;z-index:4;border-radius:8px;touch-action:manipulation}
+#stage .pmm-wheel-board .pmm-wheel-clip-error{font:700 clamp(9px,2cqw,13px)/1.5 var(--pmm-text-font);
+ text-align:center;color:#942b20;direction:rtl}
+#stage .pmm-wheel-board .pmm-wheel-clip-error[hidden]{display:none!important}
+/* Search is visually separate; its results do not replace or rebuild the wheel. */
+#stage .pmm-clips-search{position:absolute;top:0;right:4%;left:4%;z-index:60;direction:rtl;
+ font-family:var(--pmm-text-font);display:grid;gap:3px}
+#stage .pmm-clips-search-row{display:flex;align-items:center;gap:5px;background:#fff2c9f4;
+ padding:4px 7px;border:2px solid #ba852c;border-radius:13px;box-shadow:0 3px 9px #33200545}
+#stage .pmm-clips-search-label{font-size:clamp(10px,2.4cqw,16px);font-weight:900;color:#073965;white-space:nowrap}
+#stage #pmm-clip-search-input{height:clamp(31px,7cqw,41px);width:100%;min-width:0;flex:1;
+ background:#fffcf4;border:1px solid #b48a43;border-radius:8px;padding:3px 7px;
+ font:750 clamp(11px,2.7cqw,17px) var(--pmm-text-font)!important;color:#073965;direction:rtl}
+#stage #pmm-clip-search-clear{flex:0 0 auto;min-width:29px;height:29px;background:#f6deb0;
+ border:1px solid #bb8933;border-radius:8px;color:#184772;font-size:20px;cursor:pointer}
+#stage #pmm-clip-search-status{padding:1px 6px;font:750 clamp(9px,2cqw,13px)/1.5 var(--pmm-text-font);
+ color:#073961;text-align:center;background:#fff1cdde;border-radius:7px;max-width:max-content;margin:0 auto}
+#stage #pmm-clip-search-results{max-height:240px;max-height:39cqh;overflow-y:auto;overscroll-behavior:contain;
+ background:#fff3d7f7;border:2px solid #be8731;border-radius:12px;padding:3px;
+ box-shadow:0 6px 12px #331f0a66;touch-action:pan-y!important}
+#stage #pmm-clip-search-results[hidden]{display:none!important}
+#stage .pmm-clip-search-result{display:block;width:100%;text-align:right;direction:rtl;
+ margin:0;padding:7px 9px;border:0;border-bottom:1px solid #c59b5180;background:transparent;
+ color:#133b61;font:750 clamp(11px,2.6cqw,16px)/1.55 var(--pmm-text-font);cursor:pointer}
+#stage .pmm-clip-search-result:focus-visible{outline:2px solid #026eb4;outline-offset:-2px}
+#stage .pmm-clip-search-result span{display:block;font-weight:450;font-size:.85em;overflow-wrap:anywhere}
+#stage .pmm-clips-panel .pmm-wheel-position{top:auto!important;bottom:4%!important}
+@media(prefers-reduced-motion:reduce){#stage .pmm-wheel-clip-placeholder{transition:none!important}}
+
+
+/* Owner v144 — 201 numbered WebP posters, exact match to video title and tags.
+ * Covers load only near the rotating wheel center and never request MP4 data.
+ * Keep the original rotating geometry, search, native download and Play routes. */
+#stage .pmm-clips-panel .pmm-wheel-board > img.pmm-wheel-clip-poster{
+  position:absolute!important;top:0!important;left:0!important;inset:0!important;
+  width:100%!important;height:100%!important;object-fit:cover!important;
+  border-radius:10px!important;z-index:1!important;pointer-events:none!important;
+  transition:opacity .24s ease,visibility .24s ease;
+}
+#stage .pmm-clips-panel .pmm-wheel-clip-placeholder.pmm-clip-with-poster{
+  position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+  background:transparent!important;border:0!important;border-radius:10px!important;
+  padding:0!important;z-index:2!important;display:block!important;
+}
+#stage .pmm-clips-panel .pmm-clip-with-poster .pmm-wheel-clip-start{
+  position:absolute!important;top:14%!important;left:50%!important;
+  transform:translateX(-50%)!important;width:33%!important;height:auto!important;
+  aspect-ratio:1!important;z-index:3!important;
+  filter:drop-shadow(0 3px 6px rgba(0,0,0,.75));
+}
+#stage .pmm-clips-panel .pmm-clip-with-poster .pmm-wheel-clip-copy{display:none!important}
+#stage .pmm-clips-panel .pmm-clip-with-poster .pmm-wheel-clip-error:not([hidden]){
+  position:absolute;bottom:5%;left:3%;right:3%;z-index:4;
+  background:#fff3dbf5;border-radius:6px;padding:3px;
+}
+#stage .pmm-clips-panel .pmm-wheel-board.pmm-clip-video-active > img.pmm-wheel-clip-poster{
+  opacity:0!important;visibility:hidden!important;
+}
+@media(prefers-reduced-motion:reduce){
+  #stage .pmm-clips-panel .pmm-wheel-board > img.pmm-wheel-clip-poster{transition:none!important}
+}
+
+
+/* v145: The SAME approved Nahj/other-session search icon (#nahj-find-button)
+ * is reused without changing its art, size or touch zone. Only the popup
+ * content differs for clip title + hashtag search. */
+#stage #pmm-clip-find-panel[hidden],#stage #pmm-clip-find-results[hidden],
+#stage #pmm-clip-fullscreen[hidden]{display:none!important}
+#stage #pmm-clip-find-panel{position:absolute;z-index:64;top:47%;left:13%;width:74%;
+ box-sizing:border-box;padding:10px;border:2px solid #c38b36;border-radius:15px;
+ direction:rtl;text-align:right;background:linear-gradient(155deg,#fff8da,#f2d491);
+ color:#073965;box-shadow:0 6px 20px #34200c88;
+ font-family:'PMM Estedad',Tahoma,Arial,sans-serif}
+#stage #pmm-clip-find-panel label{display:block;font-size:clamp(12px,2.7cqw,18px);
+ font-weight:900;margin-bottom:6px}
+#stage .pmm-clip-find-row{display:flex;align-items:center;gap:5px}
+#stage #pmm-clip-find-input{width:100%;min-width:0;flex:1;min-height:38px;
+ padding:7px;border:1.5px solid #a9792d;border-radius:9px;background:#fffdf5;
+ direction:rtl;text-align:right;color:#09345b;
+ font:750 clamp(11px,2.6cqw,16px) 'PMM Estedad',Tahoma,Arial,sans-serif}
+#stage #pmm-clip-find-status{font:750 clamp(11px,2.3cqw,15px)/1.5 var(--pmm-text-font);
+ margin:6px 0 2px;color:#17466c;text-align:center}
+#stage #pmm-clip-find-status:empty{display:none!important}
+#stage #pmm-clip-find-results{max-height:clamp(115px,28cqh,270px);overflow:auto;
+ scrollbar-width:thin;overscroll-behavior:contain;touch-action:pan-y!important;
+ background:#fff5db;border:1px solid #c5964e;border-radius:9px}
+#stage .pmm-clip-find-result{display:block;width:100%;border:0;border-bottom:1px solid #c5964e;
+ background:transparent;color:#103f65;cursor:pointer;direction:rtl;text-align:right;
+ padding:7px 9px;font:700 clamp(11px,2.5cqw,16px)/1.6 var(--pmm-text-font)}
+#stage .pmm-clip-find-result span{display:block;font-size:.84em;font-weight:500;overflow-wrap:anywhere}
+#stage .pmm-clip-find-result:focus-visible{outline:2px solid #0271ae;outline-offset:-2px}
+/* Hidden/side clips have nested placeholders with pointer-events:auto!important
+ * from the earlier layout. Disable those too, or they steal the center tap. */
+#stage #clips-wheel-rotor .pmm-wheel-board:not([aria-current="true"]),
+#stage #clips-wheel-rotor .pmm-wheel-board:not([aria-current="true"]) *{
+ pointer-events:none!important}
+/* An accessible explicit enlarge action appears only after THIS clip's Play.
+ * The native HTML5 video remains the click owner and exposes its controls. */
+#stage .pmm-wheel-board .pmm-clip-enlarge{position:absolute;top:2px;right:2px;z-index:10;
+ display:grid;place-items:center;width:clamp(29px,5.8cqw,42px);height:clamp(29px,5.8cqw,42px);
+ padding:1px;border:1px solid #e6ca8f;border-radius:8px;
+ background:#092f56eb;color:#fff4d0;font-size:clamp(19px,4cqw,29px);
+ cursor:pointer;touch-action:manipulation}
+#stage .pmm-wheel-board .pmm-clip-enlarge:focus-visible{outline:3px solid #ffe7a8}
+/* Enlarged video inside the Android WebView: works without a native fullscreen
+ * activity or any change in Java or manifest. Android Back closes it first. */
+#stage .pmm-clip-fullscreen{position:absolute;inset:0;z-index:200;
+ background:#07111ef9;display:flex;align-items:center;justify-content:center;
+ padding:2%;box-sizing:border-box;direction:ltr}
+#stage .pmm-clip-fullscreen-media{width:100%;height:100%;min-height:0;
+ display:flex;align-items:center;justify-content:center}
+#stage .pmm-clip-fullscreen video.pmm-wheel-clip-video{
+ position:relative!important;inset:auto!important;width:100%!important;height:100%!important;
+ max-width:100%!important;max-height:100%!important;border-radius:0!important;
+ background:#000;object-fit:contain!important;z-index:1!important;touch-action:auto!important}
+#stage #pmm-clip-fullscreen-close{position:absolute;z-index:210;top:1.5%;right:3%;
+ display:grid;place-items:center;min-width:44px;min-height:44px;padding:0 8px;
+ border:2px solid #e1c181;border-radius:50%;background:#133e64;color:#fff2cd;
+ font:900 27px Tahoma,Arial,sans-serif;cursor:pointer;touch-action:manipulation}
+#stage #pmm-clip-fullscreen-close:focus-visible{outline:3px solid #fff5be}
+
+
+
+/* v146 clip fullscreen: never detach/reappend an active <video> element.
+   Reparenting a playing video in Android WebView can stall the decoder and
+   temporarily swallow controls after returning to the carousel. */
+#stage.pmm-clip-expanded #list-pane .content-view {
+ position:absolute!important;inset:0!important;left:0!important;top:0!important;
+ width:100%!important;height:100%!important;padding:0!important;
+ overflow:visible!important;z-index:100!important;
+}
+#stage.pmm-clip-expanded #list-pane #contents {
+ position:absolute!important;inset:0!important;left:0!important;top:0!important;
+ width:100%!important;height:100%!important;overflow:visible!important;
+ padding:0!important;margin:0!important;
+}
+#stage.pmm-clip-expanded #list-pane .pmm-clips-panel {
+ position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+ overflow:visible!important;background:#05080b!important;touch-action:auto!important;
+}
+#stage.pmm-clip-expanded #clips-wheel-canvas {
+ position:absolute!important;inset:0!important;left:0!important;top:0!important;
+ width:100%!important;height:100%!important;overflow:visible!important;
+ perspective:none!important;z-index:100!important;touch-action:auto!important;
+}
+#stage.pmm-clip-expanded #clips-wheel-rotor {
+ position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+ transform:none!important;transform-style:flat!important;
+}
+#stage.pmm-clip-expanded #clips-wheel-rotor .pmm-wheel-board:not([aria-current="true"]) {
+ display:none!important;
+}
+#stage.pmm-clip-expanded #clips-wheel-rotor .pmm-wheel-board[aria-current="true"] {
+ position:absolute!important;inset:0!important;left:0!important;top:0!important;
+ width:100%!important;height:100%!important;max-width:100%!important;
+ aspect-ratio:auto!important;box-sizing:border-box!important;
+ padding:0!important;margin:0!important;border:0!important;border-radius:0!important;
+ transform:none!important;transition:none!important;will-change:auto!important;
+ backface-visibility:visible!important;box-shadow:none!important;
+ background:#000!important;overflow:visible!important;touch-action:auto!important;
+}
+#stage.pmm-clip-expanded #clips-wheel-rotor .pmm-wheel-board[aria-current="true"] video.pmm-wheel-clip-video {
+ position:absolute!important;inset:0!important;left:0!important;top:0!important;
+ width:100%!important;height:100%!important;max-width:100%!important;
+ max-height:100%!important;object-fit:contain!important;
+ border-radius:0!important;z-index:5!important;touch-action:auto!important;
+}
+#stage.pmm-clip-expanded #clips-wheel-rotor .pmm-clip-enlarge,
+#stage.pmm-clip-expanded .pmm-clips-panel #pmm-clip-save,
+#stage.pmm-clip-expanded .pmm-clips-panel .pmm-wheel-position {
+ display:none!important;
+}
+#stage.pmm-clip-expanded #pmm-clip-fullscreen {
+ background:transparent!important;pointer-events:none!important;z-index:220!important;
+}
+#stage.pmm-clip-expanded #pmm-clip-fullscreen-media {display:none!important;}
+#stage.pmm-clip-expanded #pmm-clip-fullscreen-close,
+#stage.pmm-clip-expanded #pmm-clip-fullscreen-save {pointer-events:auto!important;}
+#stage #pmm-clip-fullscreen-save {
+ position:absolute;z-index:210;top:1.5%;left:3%;min-width:77px;min-height:44px;
+ display:inline-flex;flex-direction:row;align-items:center;justify-content:center;gap:5px;
+ padding:7px 11px;border:2px solid #f4ca77;border-radius:999px;
+ background:linear-gradient(150deg,#0b639f,#06366d,#05244e);color:#ffebbd;
+ box-shadow:0 0 0 2px #a87320,0 4px 11px #16100a77;
+ font-family:'PMM Estedad',Tahoma,Arial,sans-serif;font-size:clamp(11px,2.4cqw,17px);
+ font-weight:900;line-height:1.2;touch-action:manipulation;cursor:pointer;
+}
+#stage #pmm-clip-fullscreen-save svg {width:21px;height:21px;display:block;}
+#stage #pmm-clip-fullscreen-save:focus-visible {outline:3px solid #fff5be;outline-offset:3px;}
+
+
+/* v147: prevent Android's WebChromeClient full-screen video from hiding WebView.
+   Browser-native video controls would invoke onShowCustomView(), hiding every
+   HTML download button and causing WebView focus loss when unzooming.
+   The same physical <video> stays mounted; all controls are HTML/JS. */
+#stage #clips-wheel-canvas .pmm-wheel-board.pmm-clip-video-active {
+ transition:none!important;animation:none!important;
+}
+#stage #clips-wheel-canvas .pmm-clip-media-controls{
+ position:absolute;bottom:2%;left:2%;right:2%;z-index:35;
+ display:flex;flex-wrap:wrap;align-items:center;justify-content:center;
+ gap:6px;box-sizing:border-box;padding:7px 6px;
+ border:1px solid #bfa36a;border-radius:11px;
+ background:rgba(4,18,36,.9);color:#fff0c8;
+ box-shadow:0 2px 10px #050f18b3;direction:ltr;
+ font-family:'PMM Estedad',Tahoma,Arial,sans-serif;
+ touch-action:manipulation;pointer-events:auto!important;
+}
+#stage #clips-wheel-canvas .pmm-clip-media-controls button{
+ display:grid;place-items:center;min-width:38px;min-height:38px;
+ color:#fff3ce;background:#123d63;border:1.5px solid #cda35b;
+ border-radius:9px;padding:3px 7px;font:bold 19px Tahoma,Arial,sans-serif;
+ touch-action:manipulation;pointer-events:auto!important;cursor:pointer;
+}
+#stage #clips-wheel-canvas .pmm-clip-media-controls input[type=range]{
+ flex:1 1 70px;min-width:48px;max-width:75%;height:35px;
+ accent-color:#e8b960;touch-action:pan-x!important;
+ pointer-events:auto!important;
+}
+#stage #clips-wheel-canvas .pmm-clip-media-controls .pmm-clip-time{
+ font:700 clamp(9px,2cqw,13px) Tahoma,Arial,sans-serif;
+ text-align:center;direction:ltr;white-space:nowrap;
+}
+#stage #clips-wheel-canvas .pmm-clip-media-controls button:focus-visible,
+#stage #clips-wheel-canvas .pmm-clip-media-controls input:focus-visible{
+ outline:3px solid #fff2ab;outline-offset:1px;
+}
+#stage.pmm-clip-expanded #clips-wheel-canvas .pmm-clip-media-controls{
+ position:absolute;bottom:3%;left:4%;right:4%;z-index:110;
+ min-height:52px;flex-wrap:nowrap;gap:8px;padding:7px 10px;
+}
+#stage.pmm-clip-expanded #clips-wheel-canvas .pmm-clip-media-controls input[type=range]{
+ max-width:none;min-width:0;
+}
+#stage.pmm-clip-expanded #clips-wheel-rotor .pmm-wheel-board[aria-current="true"] .pmm-clip-media-controls {
+ pointer-events:auto!important;
+}
+#stage #clips-wheel-canvas video.pmm-wheel-clip-video{
+ -webkit-user-select:none;user-select:none;
+}
+
+
+/* v148: stationary clip video layer; grid makes top buttons and bottom transport
+   ACTUAL SIBLINGS of the picture, never overlays over its pixels.  The old
+   inline video / reparenting / massive CSS 3D overrides above are superseded. */
+#stage #pmm-clip-fullscreen[hidden]{display:none!important}
+#stage #pmm-clip-fullscreen{
+ position:absolute!important;z-index:1000!important;
+ top:var(--pmm-inline-y,0px)!important;left:var(--pmm-inline-x,0px)!important;
+ right:auto!important;bottom:auto!important;
+ width:var(--pmm-inline-w,100px)!important;height:var(--pmm-inline-h,180px)!important;
+ box-sizing:border-box!important;display:grid!important;
+ grid-template-rows:0px minmax(0,1fr) auto!important;
+ gap:0!important;padding:0!important;
+ border-radius:9px!important;background:#060a11!important;
+ overflow:hidden!important;pointer-events:auto!important;
+ align-items:stretch!important;justify-content:stretch!important;
+ direction:ltr;isolation:isolate;
+}
+#stage #pmm-clip-fullscreen .pmm-clip-player-toolbar{
+ position:relative!important;inset:auto!important;display:flex!important;
+ align-items:center;justify-content:space-between;min-height:0;
+ padding:0!important;direction:ltr;overflow:visible;
+}
+#stage #pmm-clip-fullscreen #pmm-clip-fullscreen-media{
+ position:relative!important;inset:auto!important;width:100%!important;
+ height:100%!important;min-height:0!important;display:block!important;
+ overflow:hidden!important;background:#000;
+}
+#stage #pmm-clip-fullscreen #pmm-clip-fullscreen-media video.pmm-docked-video{
+ position:absolute!important;inset:0!important;left:0!important;top:0!important;
+ width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;
+ display:block!important;object-fit:contain!important;
+ z-index:1!important;border-radius:0!important;touch-action:pan-y!important;
+ -webkit-transform:none!important;transform:none!important;
+}
+#stage #pmm-clip-fullscreen #pmm-clip-fullscreen-controls{
+ position:relative!important;inset:auto!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;
+ width:100%!important;min-width:0!important;min-height:46px!important;
+ display:flex!important;flex-wrap:nowrap!important;align-items:center!important;
+ gap:3px!important;padding:3px!important;margin:0!important;
+ box-sizing:border-box!important;border:0!important;border-radius:0!important;
+ background:#071c34!important;box-shadow:none!important;
+ z-index:2!important;pointer-events:auto!important;
+}
+#stage #pmm-clip-fullscreen #pmm-clip-fullscreen-controls button{
+ min-width:28px!important;min-height:34px!important;padding:2px!important;
+ border:1px solid #d0a65e;border-radius:6px;font-size:16px;
+ flex:0 0 auto!important;pointer-events:auto!important;
+}
+#stage #pmm-clip-fullscreen #pmm-clip-fullscreen-controls .pmm-clip-time{
+ font-size:8px!important;white-space:nowrap;flex:0 0 auto;
+}
+#stage #pmm-clip-fullscreen #pmm-clip-fullscreen-controls input[type=range]{
+ flex:1 1 30px!important;min-width:15px!important;max-width:none!important;
+ height:26px!important;pointer-events:auto!important;
+}
+#stage #pmm-clip-fullscreen #pmm-clip-fullscreen-close{
+ position:absolute!important;top:4px!important;right:4px!important;left:auto!important;
+ display:grid!important;place-items:center!important;z-index:4!important;
+ width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;
+ padding:0!important;margin:0!important;border-radius:10px!important;
+ font:900 22px Tahoma,sans-serif!important;
+}
+#stage #pmm-clip-fullscreen #pmm-clip-fullscreen-save{display:none!important}
+#stage.pmm-clip-expanded #legacy-back-top,
+#stage.pmm-clip-expanded #nahj-find-button,
+#stage.pmm-clip-expanded #list-pane #back-button{
+ display:none!important;visibility:hidden!important;pointer-events:none!important;
+}
+#stage.pmm-clip-expanded #pmm-clip-fullscreen{
+ position:absolute!important;inset:0!important;left:0!important;top:0!important;
+ right:0!important;bottom:0!important;width:100%!important;height:100%!important;
+ grid-template-rows:clamp(60px,9dvh,94px) minmax(0,1fr) clamp(73px,10dvh,110px)!important;
+ padding:0!important;border-radius:0!important;background:#050a12!important;
+ overflow:hidden!important;z-index:1000!important;
+}
+#stage.pmm-clip-expanded #pmm-clip-fullscreen .pmm-clip-player-toolbar{
+ padding:10px clamp(12px,4vw,24px)!important;
+ background:#061c36!important;z-index:4!important;
+ border-bottom:1px solid #c9a55e!important;
+ overflow:visible!important;
+}
+#stage.pmm-clip-expanded #pmm-clip-fullscreen #pmm-clip-fullscreen-save{
+ position:relative!important;inset:auto!important;left:auto!important;top:auto!important;
+ display:inline-flex!important;min-height:44px!important;min-width:84px!important;
+ z-index:4!important;pointer-events:auto!important;
+}
+#stage.pmm-clip-expanded #pmm-clip-fullscreen #pmm-clip-fullscreen-close{
+ position:relative!important;inset:auto!important;top:auto!important;right:auto!important;
+ width:49px!important;height:49px!important;min-width:49px!important;min-height:49px!important;
+ border-radius:50%!important;font-size:30px!important;
+}
+#stage.pmm-clip-expanded #pmm-clip-fullscreen #pmm-clip-fullscreen-controls{
+ padding:9px 12px!important;gap:6px!important;
+ border-top:1px solid #c9a55e!important;
+ min-height:0!important;align-self:stretch!important;
+ background:#061c36!important;
+}
+#stage.pmm-clip-expanded #pmm-clip-fullscreen #pmm-clip-fullscreen-controls button{
+ width:48px!important;height:48px!important;min-width:48px!important;min-height:48px!important;
+ font-size:24px!important;border-radius:10px!important;
+}
+#stage.pmm-clip-expanded #pmm-clip-fullscreen #pmm-clip-fullscreen-controls .pmm-clip-time{
+ font-size:clamp(10px,2.4vw,16px)!important;
+}
+#stage.pmm-clip-expanded #pmm-clip-fullscreen #pmm-clip-fullscreen-controls input[type=range]{
+ min-width:40px!important;height:42px!important;
+}
+/* The original 201-card carousel stays untouched; only its active poster
+   becomes hidden while the stable top-level player is in front of it. */
 
 </style>
 <link rel="stylesheet" href="pmm_online_updates.css">
@@ -1707,11 +2206,11 @@ html,body{height:100%;margin:0;padding:0!important;overflow:hidden;background:#1
         </header>
         <div class="home-submenu-grid">
           <button type="button" class="home-menu-card home-submenu-card" data-menu="tawhid" aria-label="توحید کاربردی">
-            <span class="home-menu-icon-wrap is-devotional" aria-hidden="true"><img class="home-menu-icon devotional-logo" src="images/pmm_v117_tawhid_logo.png" alt="" loading="eager" decoding="sync"></span>
+            <span class="home-menu-icon-wrap is-devotional" aria-hidden="true"><img class="home-menu-icon devotional-logo" src="images/pmm_owner_tawhid_v137.png" alt="" loading="eager" decoding="sync"></span>
             <span class="home-menu-title">توحید کاربردی</span>
           </button>
           <button type="button" class="home-menu-card home-submenu-card" data-menu="see_god" aria-label="دیدن خدا در زندگی">
-            <span class="home-menu-icon-wrap is-devotional" aria-hidden="true"><img class="home-menu-icon devotional-logo" src="images/pmm_v117_kaaba_logo.png" alt="" loading="eager" decoding="sync"></span>
+            <span class="home-menu-icon-wrap is-devotional" aria-hidden="true"><img class="home-menu-icon devotional-logo" src="images/pmm_owner_see_god_v137.png" alt="" loading="eager" decoding="sync"></span>
             <span class="home-menu-title">دیدن خدا در زندگی</span>
           </button>
         </div>
@@ -1739,7 +2238,7 @@ html,body{height:100%;margin:0;padding:0!important;overflow:hidden;background:#1
       <div class="wisdom-settings-entry"><button type="button" id="wisdom-reminder-gear" class="wisdom-settings-gear" title="تنظیمات یادآوری" aria-label="تنظیم یادآور مهمانی مولا" aria-controls="wisdom-reminder-panel" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2h4l.6 2.4c.5.2 1 .4 1.4.7l2.3-1.1 2.8 2.8-1.1 2.3c.3.4.5.9.7 1.4L23 11v4l-2.4.6c-.2.5-.4 1-.7 1.4l1.1 2.3-2.8 2.8-2.3-1.1c-.4.3-.9.5-1.4.7L14 23h-4l-.6-2.4c-.5-.2-1-.4-1.4-.7l-2.3 1.1-2.8-2.8 1.1-2.3c-.3-.4-.5-.9-.7-1.4L1 14v-4l2.4-.6c.2-.5.4-1 .7-1.4L3 5.7l2.8-2.8 2.3 1.1c.4-.3.9-.5 1.4-.7L10 2Z" transform="translate(1 0) scale(.91)"/><circle cx="12" cy="12" r="3.2"/></svg></button></div>
       <section id="wisdom-reminder-panel" class="pmm-wisdom-reminder-panel" aria-label="تنظیمات یادآوری تفال به نهج‌البلاغه" hidden></section>
       <section id="wisdom-intro" class="wisdom-intro" aria-label="نیت و آغاز قرعه حکمت">
-        <div class="intention-emblem" aria-hidden="true">✦</div>
+        
         <p class="intention-message">نیت کنید و یک جمله مهمان کلام امیرالمؤمنین باشید</p>
         <button type="button" id="wisdom-draw-action" class="gold-button wisdom-start-button">اینجا کلیک کنید.</button>
         <button type="button" id="wisdom-resume-action" class="pmm-resume-wisdom" hidden>ادامه از آخرین حکمت</button>
@@ -1785,7 +2284,7 @@ html,body{height:100%;margin:0;padding:0!important;overflow:hidden;background:#1
   <section class="offline-course-scroll" id="offline-course-scroll" aria-label="دوره آفلاین نهج‌البلاغه‌خوانی" hidden tabindex="0">
     <div class="course-body">
       <section class="course-panel course-welcome" id="course-welcome" aria-label="دعوت به همراهی">
-        <div class="course-emblem" aria-hidden="true">✦</div>
+        
         <h2 class="course-heading">دوره آفلاین نهج‌البلاغه‌خوانی</h2>
         <p class="course-welcome-message">شما می‌توانید با روزی چهل دقیقه وقت گذاشتن، شرح کل نهج‌البلاغه را شنیده و با معارف علوی آشنا شوید.</p>
         <p class="course-welcome-sub">این یک انتخاب نیست، یک توفیق الهی است برای انس شما با کلمات امیرالمؤمنین علیه‌السلام.</p>
@@ -1798,7 +2297,7 @@ html,body{height:100%;margin:0;padding:0!important;overflow:hidden;background:#1
       </section>
 
       <section class="course-panel course-setup" id="course-setup" aria-label="تنظیم برنامه شنیدن" hidden>
-        <div class="course-emblem" aria-hidden="true">✦</div>
+        
         <h2 class="course-heading">من دستیار هوشمند شما هستم</h2>
         <p class="course-setup-question">مایلید روزی چند صوت بشنوید؟</p>
         <div class="course-plan-options" role="group" aria-label="انتخاب برنامه شنیدن">
@@ -1807,9 +2306,17 @@ html,body{height:100%;margin:0;padding:0!important;overflow:hidden;background:#1
           <button type="button" class="course-plan-choice" data-course-plan="weekly" aria-pressed="false">هفته‌ای ۱ صوت</button>
         </div>
         <div class="course-reminder-setting">
-          <label for="course-reminder-time">ساعت یادآوری قرار امروز</label>
-          <input type="time" id="course-reminder-time" value="09:00" step="60" required
-                 aria-describedby="course-reminder-time-help" aria-label="انتخاب ساعت یادآوری دوره آفلاین">
+          <label for="course-reminder-hour">ساعت یادآوری قرار امروز</label>
+          <div class="course-digital-time" role="group" aria-label="تنظیم دیجیتال ساعت و دقیقه یادآوری">
+            <input type="text" id="course-reminder-hour" inputmode="numeric" autocomplete="off" maxlength="2"
+                   value="09" placeholder="ساعت" aria-label="ساعت از صفر تا بیست و سه"
+                   aria-describedby="course-reminder-time-help" required>
+            <span class="course-digital-colon" aria-hidden="true">:</span>
+            <input type="text" id="course-reminder-minute" inputmode="numeric" autocomplete="off" maxlength="2"
+                   value="00" placeholder="دقیقه" aria-label="دقیقه از صفر تا پنجاه و نه"
+                   aria-describedby="course-reminder-time-help" required>
+          </div>
+          <input type="hidden" id="course-reminder-time" value="09:00">
           <p id="course-reminder-time-help">از ۵:۰۰ صبح تا ۲۳:۵۹؛ یا ۰۰:۰۰ به معنی ۱۲ شب در پایان روز انتخاب‌شده. اعلان فقط در صورت اجازه شما فعال می‌شود.</p>
         </div>
         <div class="course-weekdays" id="course-weekdays" hidden>
@@ -1847,14 +2354,14 @@ html,body{height:100%;margin:0;padding:0!important;overflow:hidden;background:#1
         </section>
 
         <section class="course-panel course-no-due" id="course-no-due" hidden>
-          <div class="course-emblem" aria-hidden="true">✦</div>
+          
           <h3>برای امروز کافی است</h3>
           <p id="course-no-due-text">صوت بعدی در نوبت بعدی آماده خواهد بود.</p>
           <strong class="course-next-date" id="course-next-date"></strong>
         </section>
 
         <section class="course-panel course-complete" id="course-complete" hidden>
-          <div class="course-emblem course-success-emblem" aria-hidden="true">✦</div>
+          
           <h3>الحمدلله؛ یک دور شرح نهج‌البلاغه را به پایان رساندید.</h3>
           <p>امیدواریم این همراهی، مقدمه انس بیشتر با کلمات امیرالمؤمنین علیه‌السلام باشد.</p>
           <button type="button" class="course-primary-button" id="course-complete-home">بازگشت به صفحه اصلی</button>
@@ -2580,13 +3087,29 @@ window.PMM_NEW_UI=Object.freeze({
   <div id="nahj-find-row"><input id="nahj-find-input" type="text" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="شماره فارسی یا انگلیسی" aria-describedby="nahj-find-status"><button type="submit" class="nahj-find-action">برو</button><button type="button" id="nahj-find-close" class="nahj-find-action" aria-label="بستن جستجو">×</button></div>
   <div id="nahj-find-status" role="status" aria-live="polite"></div>
 </form>
+<form id="pmm-clip-find-panel" role="search" aria-label="جستجو در عنوان و هشتگ ۲۰۱ کلیپ" hidden>
+  <label for="pmm-clip-find-input">جستجو در عنوان و هشتگ کلیپ‌ها</label>
+  <div class="pmm-clip-find-row"><input id="pmm-clip-find-input" type="search" autocomplete="off" placeholder="عنوان یا هشتگ را وارد کنید" aria-describedby="pmm-clip-find-status"><button id="pmm-clip-find-clear" type="button" class="nahj-find-action" aria-label="پاک کردن جستجو">پاک</button><button id="pmm-clip-find-close" type="button" class="nahj-find-action" aria-label="بستن جستجو">×</button></div>
+  <div id="pmm-clip-find-status" role="status" aria-live="polite"></div>
+  <div id="pmm-clip-find-results" role="group" aria-label="کلیپ‌های پیدا شده" hidden></div>
+</form>
 <img class="list-title gone" id="dynamic-title" alt="عنوان بخش"><div class="clip-title gone" id="clips-page-title">کلیپ‌های تصویری</div>
 <div class="content-view" id="content-view"><h2 id="legacy-heading" aria-live="polite"></h2><div class="row-list" id="contents"></div></div>
 </div>
 <div class="toast gone" id="toast"></div>
 <div class="wisdom-floor-cover" aria-hidden="true"></div><button type="button" id="legacy-back-top" class="legacy-back" aria-label="بازگشت به صفحه جدید">بازگشت</button>
-<button type="button" id="nahj-find-button" class="legacy-back" title="جستجوی شماره" aria-label="جستجوی شماره خطبه، نامه یا حکمت" aria-controls="nahj-find-panel" aria-expanded="false" hidden></button></main>
+<button type="button" id="nahj-find-button" class="legacy-back" title="جستجوی شماره" aria-label="جستجوی شماره خطبه، نامه یا حکمت" aria-controls="nahj-find-panel" aria-expanded="false" hidden></button>
+<div id="pmm-clip-fullscreen" class="pmm-clip-fullscreen" role="region" aria-label="پخش کننده کلیپ انتخاب شده" hidden>
+  <div class="pmm-clip-player-toolbar" id="pmm-clip-player-toolbar">
+    <button type="button" id="pmm-clip-fullscreen-save" title="دریافت کلیپ انتخاب‌شده" aria-label="دریافت همین کلیپ در گالری"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3"/></svg><span>دریافت</span></button>
+    <button type="button" id="pmm-clip-fullscreen-close" aria-label="نمای بزرگ کلیپ" title="بزرگ‌نمایی کلیپ">⛶</button>
+  </div>
+  <div id="pmm-clip-fullscreen-media" class="pmm-clip-fullscreen-media"></div>
+  <div id="pmm-clip-fullscreen-controls" class="pmm-clip-media-controls" role="group" aria-label="کنترل‌های کلیپ"></div>
+</div>
+</main>
 
+<script src="pmm_video_clips_v144.js"></script>
 <script src="nahj_audio_links.js"></script>
 <script src="pmm_kafi_resume_screenoff.js"></script>
 <script>
@@ -2607,13 +3130,27 @@ const GUEST_SAYINGS = [
 // The 18 supplied posters, stored locally at original JPEG fidelity.
 const GUEST_ALBUM = Array.isArray(window.PMM_PHOTO_QUOTES) ? window.PMM_PHOTO_QUOTES : [];
 const ABOUT_HTML = "<h1>درباره من</h1>\n<p><strong>محمد کاظمی‌نیا</strong>، طلبه درس خارج و مدرس حوزه علمیه قم، دانش‌آموخته بنیاد بین‌المللی نهج‌البلاغه و پژوهشگر حوزه معارف علوی هستم.</p>\n<p>بخش مهمی از فعالیت علمی و تبلیغی من به مطالعه، شرح و ترویج معارف نهج‌البلاغه اختصاص دارد؛ با این باور که کلمات امیرالمؤمنین علی(ع) تنها برای خواندن و دانستن نیستند، بلکه می‌توانند راهنمای اندیشه، انتخاب و رفتار ما در زندگی باشند.</p>\n<h2>از شرح نهج‌البلاغه تا کاربردی کردن معارف</h2>\n<p>فعالیت آموزشی خود را در فضای مجازی از سال ۱۳۹۸ با برگزاری جلسات شرح نهج‌البلاغه آغاز کردم. این مسیر در قالب دو دوره کامل شرح نهج‌البلاغه ادامه یافت و در هر دو دوره، تمام کتاب، از خطبه‌ها و نامه‌ها تا حکمت‌ها، به‌صورت ترتیبی شرح داده شد.</p>\n<p>دوره دوم شرح نهج‌البلاغه، از ابتدای سال ۱۴۰۱ آغاز شد و در ۱۳ رجب ۱۴۰۴ به پایان رسید. این دوره در قالب حدود <strong>۱۱۰۰ جلسه آموزشی</strong> برگزار شد و تمام نهج‌البلاغه، از ابتدا تا انتها، به‌صورت پیوسته و تفصیلی مورد شرح و بررسی قرار گرفت.</p>\n<p>اما پس از پیمودن این مسیر، دغدغه جدی‌تری شکل گرفت: چگونه می‌توان معارف نهج‌البلاغه را از فضای مطالعه و شرح، به متن زندگی مردم آورد؟</p>\n<p>یکی از انگیزه‌های مهم این حرکت، تأکیدهای رهبر معظم انقلاب بر ضرورت کاربردی کردن معارف دینی بود؛ از جمله این بیان که:</p>\n<p>«عناوین و مفاهیم معرفتی اسلام، جنبه‌ی عملیّاتی و ترجمه‌ی عملیّاتی پیدا کند و عمل به آنها ممکن و رایج بشود.»</p>\n<p>از نگاه ایشان، معارف اهل‌بیت(ع) همچون گنجینه‌ای ارزشمند نباید در محدوده کتاب‌ها و مباحث علمی باقی بماند؛ بلکه باید با زبان روز و شیوه‌های درست، به زندگی انسان‌ها راه پیدا کند. ایشان همچنین درباره نهج‌البلاغه تأکید کرده‌اند که دردها، خطرها و مسائل زندگی انسان را می‌توان در آینه این کتاب شناخت و درمان بسیاری از آن‌ها را نیز در همین گنجینه جست‌وجو کرد.</p>\n<p>با توجه به دشواری این مسیر ــ که به‌مراتب پیچیده‌تر از شرح ترتیبی یک کتاب است ــ تلاش کردم در ادامه فعالیت‌ها، از بیان و توضیح معارف به سمت کشف کاربردهای آن‌ها حرکت کنم؛ یعنی ببینیم کلمات امیرالمؤمنین(ع) در زندگی امروز ما چه می‌گویند و چگونه می‌توانند رفتار و انتخاب‌های ما را تغییر دهند.</p>\n<p>در همین راستا، دوره‌های زیر برگزار شده است:</p>\n<ul>\n<li><strong>۵۰ جلسه توحید کاربردی:</strong> با هدف تبدیل مباحث اعتقادی به بینش و رفتار عملی و نشان دادن نقش توحید در تصمیم‌ها و انتخاب‌های روزمره.</li>\n<li><strong>۴۰ جلسه دیدن خدا در زندگی:</strong> با محوریت تقویت نگاه توحیدی به اتفاقات، نعمت‌ها، شادی‌ها و فراز و نشیب‌های زندگی.</li>\n<li><strong>۵۰ جلسه شرح بخشی از کتاب کافی:</strong> در مسیر تبیین و ترویج معارف روایی اهل‌بیت(ع).</li>\n</ul>\n<h2>آثار علمی و ادبی</h2>\n<p>در کنار فعالیت‌های آموزشی و پژوهشی، در حوزه شعر آیینی و نوحه نیز فعالیت دارم. مجموعه شعر و نوحه <strong>«نفس‌های گرم»</strong> از آثار منتشرشده من در این حوزه است. برخی از سروده‌ها و نوحه‌هایم در مراسم و محافل مذهبی اجرا شده‌اند؛ از جمله نوحه‌هایی که توسط مداحان در محضر رهبر انقلاب اجرا شده است.</p>\n<p>رمان تاریخی <strong>«به اتفاق فرمانده»</strong> نیز در سال ۱۴۰۰ توسط انتشارات شهید کاظمی منتشر شده است. این اثر روایتی داستانی از یک موضوع تاریخی است که با قالبی متفاوت و بدیع ارائه شده است.</p>\n<p>همچنین کتاب <strong>«درمان با نهج‌البلاغه»</strong> را با رویکردی کاربردی و در قالبی مصور و در ابعاد یک گوشی تلفن همراه تألیف کرده‌ام. این کتاب به سراغ <strong>۶۰ درد و مسئله واقعی جامعه</strong> می‌رود و می‌کوشد با بهره‌گیری از کلمات امیرالمؤمنین(ع)، راهی برای شناخت و درمان آن‌ها پیش روی مخاطب بگذارد.</p>\n<h2>نرم‌افزار پای منبر مولا</h2>\n<p><strong>«پای منبر مولا»</strong> بستری برای دسترسی آسان و منظم به مجموعه جلسات و محتواهای آموزشی و معارفی است که در سال‌های گذشته تهیه و ارائه شده‌اند.</p>\n<p>هدف از راه‌اندازی این نرم‌افزار، فراهم کردن امکان بهره‌مندی آسان‌تر علاقه‌مندان از این محتواها و در نهایت، ترویج کلمات و معارف امیرالمؤمنین علی(ع) است؛ تا نهج‌البلاغه و سخنان آن حضرت، بیش از پیش در دسترس قرار بگیرد و از فضای مطالعه و شنیدن، به متن زندگی فردی و اجتماعی ما راه پیدا کند.</p>\n<p><strong>دغدغه اصلی این مسیر، تنها دانستن معارف نیست؛ بلکه فهمیدن، به‌کاربستن و زندگی کردن با آن‌هاست.</strong></p>\n<p>امیدوارم این تلاش اندک، قدمی در مسیر شناخت بهتر کلام امیرالمؤمنین(ع)، فهم عمیق‌تر معارف اهل‌بیت(ع) و عمل به آن‌ها باشد.</p>\n<p>والحمدلله رب العالمین</p>\n";
-const VIDEO_CLIPS = []; // Add video URLs/titles when received; no invented media links.
+const VIDEO_CLIPS = Array.isArray(window.PMM_VIDEO_CLIPS) ? window.PMM_VIDEO_CLIPS.filter(c=>c.number>=1&&c.number<=201) : []; // Exact owner clip list. Never preload MP4.
 const CONTACT_URL = "https://eitaa.com/joinchat/2066481246Cb13f0be69d";
 const sectionNames={towhid:'توحید کاربردی',life:'دیدن خدا در زندگی',kafi:'شرح اصول کافی',nahj:'شرح صوتی نهج‌البلاغه',clips:'کلیپ‌های تصویری'};
 const stage=document.getElementById('stage'), backdrop=document.getElementById('backdrop'), home=document.getElementById('home-pane'), list=document.getElementById('list-pane'), titleImg=document.getElementById('dynamic-title'), content=document.getElementById('content-view'), contents=document.getElementById('contents');
 let screen='home',section='',item=null,beforePlayerScroll=0;
 const fa=n=>String(n).replace(/[0-9]/g,x=>'۰۱۲۳۴۵۶۷۸۹'[Number(x)]);
 const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// Allowlist for external session actions: escaping HTML cannot make a URL safe.
+// Keep Eitaa and Aparat sessions; refuse other schemes, credentials and hosts.
+function pmmTrustedSessionUrl(value){
+ try{
+   const url=new URL(String(value??''));
+   if(url.protocol!=='https:' || url.username || url.password || url.port)return null;
+   const host=url.hostname.toLowerCase();
+   if((host==='aparat.com'||host==='www.aparat.com') &&
+      /^\/v\/[a-zA-Z0-9_-]+\/?$/.test(url.pathname))return url.href;
+   if(host==='eitaa.com' &&
+      /^\/(?:joinchat\/[a-zA-Z0-9]+|[a-zA-Z0-9_]+\/[0-9]+)\/?$/.test(url.pathname))return url.href;
+ }catch(_){/* invalid absolute URL */}
+ return null;
+}
 // Owner trial: exact catalog-number lookup; Persian/Arabic/English numerals are equivalent.
 function pmmParseNahjNumber(raw){
  const digits=String(raw??'').trim().replace(/[۰-۹٠-٩]/g,char=>{
@@ -2830,26 +3367,38 @@ function bindNahjResumes(){
  }));
 }
 function pmmSyncNahjFinder(){
- const button=document.getElementById('nahj-find-button');
- const panel=document.getElementById('nahj-find-panel');
- const chosen=screen==='list'&&section==='nahj'&&item?.nahjGroup?
-   NAHJ_AUDIO_GROUPS.find(group=>group.id===item.nahjGroup):null;
- button.hidden=!chosen;
- button.setAttribute('aria-expanded','false');
- panel.hidden=true;
- document.getElementById('nahj-find-input').value='';
- document.getElementById('nahj-find-status').textContent='';
- if(chosen)document.getElementById('nahj-find-label').textContent='شماره '+chosen.singular+' را وارد کنید';
-}
+  // One identical top-left search icon on all supported routes.
+  const button=document.getElementById('nahj-find-button');
+  const nahjPanel=document.getElementById('nahj-find-panel');
+  const clipPanel=document.getElementById('pmm-clip-find-panel');
+  const inClips=screen==='list'&&section==='clips';
+  const chosen=screen==='list'&&section==='nahj'&&item?.nahjGroup?
+    NAHJ_AUDIO_GROUPS.find(group=>group.id===item.nahjGroup):null;
+  button.hidden=!chosen&&!inClips;
+  button.setAttribute('aria-expanded','false');
+  button.setAttribute('aria-controls',inClips?'pmm-clip-find-panel':'nahj-find-panel');
+  button.setAttribute('aria-label',inClips?'جستجو در نام و هشتگ کلیپ‌ها':'جستجوی شماره خطبه، نامه یا حکمت');
+  button.title=inClips?'جستجوی کلیپ':'جستجوی شماره';
+  nahjPanel.hidden=true;clipPanel.hidden=true;
+  document.getElementById('nahj-find-input').value='';
+  document.getElementById('nahj-find-status').textContent='';
+  if(chosen)document.getElementById('nahj-find-label').textContent='شماره '+chosen.singular+' را وارد کنید';
+  if(inClips){
+    document.getElementById('pmm-clip-find-input').value='';
+    document.getElementById('pmm-clip-find-status').textContent='';
+    document.getElementById('pmm-clip-find-results').hidden=true;
+    document.getElementById('pmm-clip-find-results').textContent='';
+  }
+ }
 function renderNahjAudioCatalog(){
   const groupId=item&&typeof item==='object'?item.nahjGroup:null;
   const chosen=NAHJ_AUDIO_GROUPS.find(group=>group.id===groupId);
   if(!chosen){
     contents.innerHTML=nahjResumeSummary()+
       '<div class="nahj-audio-groups">'+NAHJ_AUDIO_GROUPS.map(group=>
-      `<button class="nahj-audio-group" type="button" data-nahj-group="${group.id}" aria-label="${group.title}">
-        <span class="nahj-audio-symbol" aria-hidden="true">${group.icon}</span>
-        <span class="nahj-audio-group-copy"><span class="nahj-audio-group-title">${group.title}</span>
+      `<button class="nahj-audio-group" type="button" data-nahj-group="${safe(group.id)}" aria-label="${safe(group.title)}">
+        <span class="nahj-audio-symbol" aria-hidden="true">${safe(group.icon)}</span>
+        <span class="nahj-audio-group-copy"><span class="nahj-audio-group-title">${safe(group.title)}</span>
         </span></button>`
     ).join('')+'</div>';
     contents.querySelectorAll('[data-nahj-group]').forEach(button=>
@@ -2860,11 +3409,11 @@ function renderNahjAudioCatalog(){
   const records=NAHJ_AUDIO_ITEMS[chosen.id];
   const entryId=item&&typeof item==='object'?item.nahjEntry:null;
   if(!entryId){
-    contents.innerHTML=`<div class="nahj-audio-caption">${chosen.title}</div>`+`
+    contents.innerHTML=`<div class="nahj-audio-caption">${safe(chosen.title)}</div>`+`
       <div class="row-list nahj-audio-list">${records.map(record=>
-        `<button class="session nahj-audio-entry" type="button" data-nahj-entry="${record.id}" aria-label="${record.title}">
+        `<button class="session nahj-audio-entry" type="button" data-nahj-entry="${safe(record.id)}" aria-label="${safe(record.title)}">
          <img loading="lazy" alt="" aria-hidden="true" src="${IMG['row_blank.webp']}">
-         <span class="session-label" lang="fa">${record.title}</span></button>`
+         <span class="session-label" lang="fa">${safe(record.title)}</span></button>`
       ).join('')}</div>`;
     contents.querySelectorAll('[data-nahj-entry]').forEach(button=>
       button.addEventListener('click',()=>setState('list','nahj',{
@@ -2907,6 +3456,7 @@ function renderNahjAudioCatalog(){
 }
 function toast(s){const el=document.getElementById('toast');el.textContent=s;el.classList.remove('gone');clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.add('gone'),2800)}
 function setState(mode,s=null,v=null){
+ if(screen==='list'&&section==='clips')window.PMM_CLIP_UI?.stop?.();
  if(screen==='list'&&section==='nahj')stopNahjInlineAudio();
  if(screen==='player'&&section==='kafi')pmmStopKafiAudio();
  if(screen==='list'&&mode==='player')beforePlayerScroll=content.scrollTop;
@@ -3190,7 +3740,8 @@ function pmmAttachKafiAudio(){
 function renderPlayer(){
  const x=item; if(!x){setState('home');return}
  const link=String(x.url||'');
- const match=link.match(/^https?:\/\/(?:www\.)?aparat\.com\/v\/([a-z0-9_-]+)/i);
+ const trustedSessionUrl=pmmTrustedSessionUrl(link);
+ const match=trustedSessionUrl?.match(/^https:\/\/(?:www\.)?aparat\.com\/v\/([a-z0-9_-]+)\/?(?:[?#]|$)/i);
  let html='<div class="content-box"><h2>'+(x.nahjAudio||section==='kafi'?safe(x.title):'جلسه '+fa(x.number))+'</h2>';
  if(section==='kafi'){
   // Only approved direct Kafi MP3s; never open old Eitaa/Aparat links.
@@ -3214,7 +3765,9 @@ function renderPlayer(){
   // Other sections' Eitaa links keep their original behavior.
   html+='<p class="player-note">این جلسه در ایتا قرار دارد.</p>';
  }else{
-  html+='<a class="action" href="'+safe(link)+'">باز کردن جلسه</a>';
+  // Never turn a remote manifest value into a clickable javascript:, data: or impostor-host URL.
+  html+=trustedSessionUrl?'<a class="action" href="'+safe(trustedSessionUrl)+'">باز کردن جلسه</a>':
+    '<p class="player-note">نشانی جلسه معتبر نیست.</p>';
  }
  html+='<button class="action" type="button" id="player-back">بازگشت</button></div>';
  contents.innerHTML=html;
@@ -3254,7 +3807,7 @@ function renderPlayer(){
  }
  document.getElementById('player-back').addEventListener('click',()=>goBack());
 }
-function goBack(){if(screen==='guest' && !document.getElementById('guest-fullview').hidden){closeGuestFull();return;}if(screen==='guest'){if(guestTicker){clearInterval(guestTicker);guestTicker=null}setState('home');}else if(screen==='biography'||screen==='photo')setState('about');else if(screen==='about')setState('home');else if(screen==='player'){
+function goBack(){if(window.PMM_CLIP_UI?.isFullscreen?.()){window.PMM_CLIP_UI.closeFullscreen();return;}if(screen==='guest' && !document.getElementById('guest-fullview').hidden){closeGuestFull();return;}if(screen==='guest'){if(guestTicker){clearInterval(guestTicker);guestTicker=null}setState('home');}else if(screen==='biography'||screen==='photo')setState('about');else if(screen==='about')setState('home');else if(screen==='player'){
   if(section==='nahj'&&item?.nahjReturn){
     const previousScroll=beforePlayerScroll;
     setState('list','nahj',item.nahjReturn);content.scrollTop=previousScroll;
@@ -3383,14 +3936,20 @@ document.getElementById('guest-full-close').addEventListener('click',closeGuestF
 document.getElementById('home-about').addEventListener('click',()=>setState('about'));
 document.querySelectorAll('[data-section]').forEach(b=>b.addEventListener('click',()=>setState('list',b.dataset.section)));
 document.getElementById('back-button').addEventListener('click',()=>goBack());
-document.getElementById('nahj-find-button').addEventListener('click',()=>{
- const panel=document.getElementById('nahj-find-panel');
- const opening=panel.hidden;
- panel.hidden=!opening;
- document.getElementById('nahj-find-button').setAttribute('aria-expanded',String(opening));
- document.getElementById('nahj-find-status').textContent='';
- if(opening)document.getElementById('nahj-find-input').focus();
-});
+ document.getElementById('nahj-find-button').addEventListener('click',()=>{
+  const inClips=screen==='list'&&section==='clips';
+  const panel=document.getElementById(inClips?'pmm-clip-find-panel':'nahj-find-panel');
+  const other=document.getElementById(inClips?'nahj-find-panel':'pmm-clip-find-panel');
+  const opening=panel.hidden;
+  other.hidden=true;panel.hidden=!opening;
+  document.getElementById('nahj-find-button').setAttribute('aria-expanded',String(opening));
+  if(inClips){
+    if(opening)document.getElementById('pmm-clip-find-input').focus();
+  }else{
+    document.getElementById('nahj-find-status').textContent='';
+    if(opening)document.getElementById('nahj-find-input').focus();
+  }
+ });
 document.getElementById('nahj-find-close').addEventListener('click',()=>{
  document.getElementById('nahj-find-panel').hidden=true;
  document.getElementById('nahj-find-button').setAttribute('aria-expanded','false');
@@ -3582,9 +4141,13 @@ function stopWheelTimer(){if(wheelAuto){clearInterval(wheelAuto);wheelAuto=null}
 function routeForWheel(){return screen==='gallery'?'photos':screen==='list'&&section==='clips'?'clips':null}
 function startWheelTimer(){
  stopWheelTimer();
+ // Do not automatically change which clip is being offered or played.
+ // Only a fresh entry into Clips draws a new chance; touch swipes still rotate.
+ if(routeForWheel()==='clips')return;
  wheelAuto=setInterval(()=>{
   const key=routeForWheel();const wheel=activeWheels.get(key);
-  if(wheel && document.getElementById('gallery-detail').hidden && !window.PMM_PHOTO_FULLSCREEN && document.visibilityState!=='hidden')wheel.spin(1);
+  if(key==='photos'&&wheel&&document.getElementById('gallery-detail').hidden&&
+     !window.PMM_PHOTO_FULLSCREEN&&document.visibilityState!=='hidden')wheel.spin(1);
  },DELAY);
 }
 function mountWheel(key,items,rotorId,canvasId,posId,onSelect){
@@ -3595,9 +4158,10 @@ function mountWheel(key,items,rotorId,canvasId,posId,onSelect){
  const wheelFragment=document.createDocumentFragment();
  let index=0,step=0,swiped=false,suppressClickUntil=0;
  items.forEach((item,i)=>{
-  const board=document.createElement('button');board.type='button';board.className='pmm-wheel-board';
+  const board=document.createElement(key==='clips'?'div':'button');if(key==='photos')board.type='button';
+  else{board.setAttribute('role','group');board.tabIndex=0;}board.className='pmm-wheel-board';
   board.dataset.index=String(i);board.style.setProperty('--board-angle',`${i*360/items.length}deg`);
-  board.setAttribute('aria-label',(key==='photos'?'عکس نوشته ':'کلیپ تصویری ')+faNum(i+1)+' از '+faNum(items.length));
+  board.setAttribute('aria-label',(key==='photos'?'عکس نوشته ':'کلیپ تصویری ')+faNum(i+1)+' از '+faNum(items.length)+(key==='clips'&&item.title?'، '+item.title:''));
   if(item.src){
    // Memory guard: only near-visible slides receive src. This keeps 99 posters
    // from decoding simultaneously in Android WebView.
@@ -3605,10 +4169,50 @@ function mountWheel(key,items,rotorId,canvasId,posId,onSelect){
    img.alt='تابلوی '+faNum(i+1);img.loading='eager';img.decoding='async';
    img.draggable=false;board.appendChild(img)
   }
-  else{const panel=document.createElement('div');panel.className='pmm-wheel-clip-placeholder';
-   panel.innerHTML='<span class="pmm-wheel-clip-icon" aria-hidden="true">▶</span><span class="pmm-wheel-clip-title"></span><span class="pmm-wheel-clip-caption">در انتظار دریافت لینک کلیپ</span>';
-   panel.querySelector('.pmm-wheel-clip-title').textContent=item.title;board.appendChild(panel);}
-  board.addEventListener('click',()=>{if(swiped||Date.now()<suppressClickUntil)return;if(key==='photos'||i===index)onSelect(i);else spin(closest(i))});
+   else{
+    // v144: show the exact-number local poster without opening an MP4 connection.
+    // Only seven nearby posters receive src, following the existing photos wheel.
+    let poster=null;
+    if(key==='clips'&&item.poster){
+      poster=document.createElement('img');poster.className='pmm-wheel-clip-poster';
+      poster.dataset.src=item.poster;poster.alt='';poster.setAttribute('aria-hidden','true');
+      poster.loading='eager';poster.decoding='async';poster.draggable=false;
+      board.appendChild(poster);
+    }
+    const panel=document.createElement('div');panel.className='pmm-wheel-clip-placeholder';
+    panel.innerHTML='<button type="button" class="pmm-wheel-clip-start" aria-label="پخش کلیپ"><span class="pmm-wheel-clip-icon" aria-hidden="true">▶</span></button><div class="pmm-wheel-clip-copy"><div class="pmm-wheel-clip-title"></div><div class="pmm-wheel-clip-tags"></div></div><div class="pmm-wheel-clip-error" role="status" aria-live="polite" hidden></div>';
+    panel.querySelector('.pmm-wheel-clip-title').textContent=item.title||'';
+    panel.querySelector('.pmm-wheel-clip-tags').textContent=item.tags||'';
+    // Text is already baked accurately into the poster; keep DOM text as fallback.
+    panel.querySelector('.pmm-wheel-clip-copy').hidden=!!poster||(!item.title&&!item.tags);
+    panel.querySelector('.pmm-wheel-clip-start').setAttribute('aria-label','پخش کلیپ '+faNum(i+1)+(item.title?'، '+item.title:''));
+    if(poster){
+       panel.classList.add('pmm-clip-with-poster');
+       poster.addEventListener('error',()=>{
+         // Rotating away removes src deliberately; never treat that as failure.
+         if(!poster.hasAttribute('src'))return;
+         panel.classList.remove('pmm-clip-with-poster');
+         panel.querySelector('.pmm-wheel-clip-copy').hidden=!item.title&&!item.tags;
+       });
+    }
+    board.appendChild(panel);}
+  board.addEventListener('click',e=>{
+   // Never redirect native video controls or the explicit enlarge control.
+   if(e.target.closest('video,.pmm-clip-enlarge,.pmm-clip-media-controls'))return;
+   if(swiped||Date.now()<suppressClickUntil)return;
+   if(key==='clips'){
+     // Tap opens THIS exact clip's player, not the next random clip.
+     if(i!==index)return; // Side previews only; intentional swipe selects them.
+     onSelect(i);
+     return;
+   }
+   if(key==='photos'||i===index)onSelect(i);else spin(closest(i));
+  });
+  if(key==='clips')board.addEventListener('keydown',e=>{
+   if((e.key==='Enter'||e.key===' ')&&e.target===board){
+     e.preventDefault();if(i===index)onSelect(i);
+   }
+  });
   wheelFragment.appendChild(board);boards.push(board);
  });
  rotor.appendChild(wheelFragment); // one layout insertion, not 105 reflows
@@ -3627,7 +4231,15 @@ function mountWheel(key,items,rotorId,canvasId,posId,onSelect){
        else if(distance>4 && img.hasAttribute('src')){img.removeAttribute('src')}
      }
    }
-   const angle=relative*38;
+   if(key==='clips'){
+     const poster=board.querySelector('img.pmm-wheel-clip-poster');
+     if(poster){
+       const url=poster.dataset.src;
+       if(distance<=3 && poster.getAttribute('src')!==url)poster.setAttribute('src',url);
+       else if(distance>4 && poster.hasAttribute('src'))poster.removeAttribute('src');
+     }
+   }
+      const angle=relative*38;
    const rad=angle*Math.PI/180;
    board.style.setProperty('--wheel-x',(Math.sin(rad)*45).toFixed(3)+'cqw');
    board.style.setProperty('--wheel-z',(Math.cos(rad)*33-17).toFixed(3)+'cqw');
@@ -3635,13 +4247,16 @@ function mountWheel(key,items,rotorId,canvasId,posId,onSelect){
    board.style.setProperty('--wheel-scale',distance===0?'1':distance===1?'0.85':'0.70');
    board.style.opacity=distance>2?'0':distance===2?'0.58':distance===1?'0.88':'1';
    board.style.zIndex=String(10-distance);
-   board.style.pointerEvents=distance>2?'none':'auto';
+   // Side clips are previews only: they cannot steal taps from the center.
+   board.style.pointerEvents=key==='clips'?(distance===0?'auto':'none'):(distance>2?'none':'auto');
    board.setAttribute('aria-current',String(i===index));
-   board.tabIndex=distance<3?0:-1;
+   board.tabIndex=key==='clips'?(distance===0?0:-1):(distance<3?0:-1);
+   if(key==='clips'){const play=board.querySelector('.pmm-wheel-clip-start');if(play)play.tabIndex=distance===0?0:-1;}
   });
   counter.textContent=faNum(index+1)+' / '+faNum(items.length);
  }
  function spin(delta){
+  if(key==='clips')pmmStopClipPlayback();
   step+=delta;
   index=((step%items.length)+items.length)%items.length;
   update();startWheelTimer();
@@ -3662,6 +4277,7 @@ function mountWheel(key,items,rotorId,canvasId,posId,onSelect){
   return true;
  }
  area.addEventListener('touchstart',e=>{
+  if(e.target.closest('video,.pmm-clip-enlarge,.pmm-clip-media-controls')){touchStart=null;return;}
   if(e.touches.length!==1){touchStart=null;return}
   const t=e.touches[0];touchStart={x:t.clientX,y:t.clientY,id:t.identifier};
  },{passive:true});
@@ -3673,6 +4289,7 @@ function mountWheel(key,items,rotorId,canvasId,posId,onSelect){
  },{passive:true});
  area.addEventListener('touchcancel',()=>{touchStart=null},{passive:true});
  area.addEventListener('pointerdown',e=>{
+  if(e.target.closest('video,.pmm-clip-enlarge,.pmm-clip-media-controls')){mouseStart=null;return;}
   if(e.pointerType==='touch'||e.button!==0)return;
   mouseStart={x:e.clientX,y:e.clientY,id:e.pointerId};
  },{passive:true});
@@ -3683,11 +4300,14 @@ function mountWheel(key,items,rotorId,canvasId,posId,onSelect){
  });
  area.addEventListener('pointercancel',()=>{mouseStart=null});
  area.addEventListener('keydown',e=>{
+  if(e.target.closest('video,input,button,.pmm-clip-media-controls'))return;
   if(e.key==='ArrowLeft'||e.key==='ArrowRight'){
    e.preventDefault();e.stopPropagation();spin(e.key==='ArrowLeft'?1:-1);
   }
  });
- const w={spin,getIndex:()=>index,boardCount:items.length};activeWheels.set(key,w);
+ const goTo=target=>{if(!Number.isInteger(target)||target<0||target>=items.length)return;
+   if(key==='clips')pmmStopClipPlayback();step+=closest(target);index=target;update();startWheelTimer();};
+ const w={spin,goTo,getIndex:()=>index,boardCount:items.length};activeWheels.set(key,w);
  update();startWheelTimer();return w;
 }
 // Restore EXACT original images, card structure, curved 3D positions and 22s rotation.
@@ -3766,6 +4386,266 @@ renderClips=function(){
     window.location.assign(link);
  });
 };
+
+
+/* v148 owner clip: truly stationary WebView video surface.
+ * DO NOT mount video inside a 3D transformed wheel board.  The parent of the
+ * single <video> never changes during play, enlarge, collapse or a swipe.
+ * No automatic stop or pause occurs when the view is resized. */
+const pmmClipHost=document.getElementById('pmm-clip-fullscreen');
+const pmmClipMedia=document.getElementById('pmm-clip-fullscreen-media');
+const pmmClipControls=document.getElementById('pmm-clip-fullscreen-controls');
+const pmmClipToggle=document.getElementById('pmm-clip-fullscreen-close');
+let pmmClipPlayer=null, pmmClipBoard=null;
+let pmmClipSwipeStart=null,pmmClipSuppressTapUntil=0;
+function pmmPositionClipPlayer(){
+  if(pmmClipHost.hidden || document.getElementById('stage').classList.contains('pmm-clip-expanded'))return;
+  const board=pmmClipBoard;
+  if(!board || !board.isConnected || board.getAttribute('aria-current')!=='true')return;
+  const stage=document.getElementById('stage');
+  const box=board.getBoundingClientRect(),rootBox=stage.getBoundingClientRect();
+  pmmClipHost.style.setProperty('--pmm-inline-x',(box.left-rootBox.left)+'px');
+  pmmClipHost.style.setProperty('--pmm-inline-y',(box.top-rootBox.top)+'px');
+  pmmClipHost.style.setProperty('--pmm-inline-w',box.width+'px');
+  pmmClipHost.style.setProperty('--pmm-inline-h',box.height+'px');
+}
+function pmmCloseClipFullscreen(){
+  const stage=document.getElementById('stage');
+  if(!stage.classList.contains('pmm-clip-expanded'))return;
+  stage.classList.remove('pmm-clip-expanded');
+  pmmClipToggle.textContent='⛶';
+  pmmClipToggle.setAttribute('aria-label','نمای بزرگ کلیپ');
+  pmmClipToggle.title='بزرگ‌نمایی کلیپ';
+  pmmPositionClipPlayer();
+  // No focus() on a removed/occluded fullscreen button; Android WebView may
+  // consume the next touch restoring focus instead of activating a control.
+}
+function pmmShowClipFullscreen(){
+  if(!pmmClipPlayer || pmmClipHost.hidden)return;
+  document.getElementById('stage').classList.add('pmm-clip-expanded');
+  pmmClipToggle.textContent='×';
+  pmmClipToggle.setAttribute('aria-label','کوچک‌کردن ویدئو');
+  pmmClipToggle.title='بازگشت به نمای کوچک';
+  // Video node and src remain untouched, and browser-native fullscreen is never invoked.
+}
+window.PMM_CLIP_UI={
+  isFullscreen:()=>document.getElementById('stage').classList.contains('pmm-clip-expanded'),
+  closeFullscreen:pmmCloseClipFullscreen,stop:()=>pmmStopClipPlayback()
+};
+pmmClipToggle.addEventListener('click',event=>{
+  event.preventDefault();event.stopPropagation();
+  if(document.getElementById('stage').classList.contains('pmm-clip-expanded'))pmmCloseClipFullscreen();
+  else pmmShowClipFullscreen();
+});
+window.addEventListener('resize',pmmPositionClipPlayer,{passive:true});
+function pmmStopClipPlayback(){
+  document.getElementById('stage').classList.remove('pmm-clip-expanded');
+  const video=pmmClipPlayer;
+  pmmClipPlayer=null;
+  if(video){try{video.pause();video.removeAttribute('src');video.load();}catch(_){/* stream disposed */}
+    video.remove();}
+  pmmClipBoard?.classList.remove('pmm-clip-video-active');
+  pmmClipBoard=null;
+  pmmClipControls.replaceChildren();
+  pmmClipHost.hidden=true;
+  pmmClipToggle.textContent='⛶';
+  pmmClipToggle.setAttribute('aria-label','نمای بزرگ کلیپ');
+  pmmClipSwipeStart=null;
+}
+function pmmClipNormalize(text){
+ return String(text||'').normalize('NFKC').replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g,'')
+   .replace(/[يى]/g,'ی').replace(/ك/g,'ک').replace(/[٠-٩۰-۹]/g,ch=>{
+     const n=ch.charCodeAt(0);return String(n>=0x06F0?n-0x06F0:n-0x0660);
+   }).replace(/[\u200c\u200d_#]/g,' ').replace(/[^a-z0-9\u0621-\u06ff]+/g,' ').toLowerCase().trim();
+}
+function pmmStartClipInWheel(i){
+ const clip=VIDEO_CLIPS[i],wheel=activeWheels.get('clips');
+ if(!clip?.url||!wheel||wheel.getIndex()!==i)return;
+ if(!/^https:\/\/dl\.kazeminia110\.ir\/Video\/video-clip\/video-clip (?:[1-9]|[1-9]\d|1\d\d|20[0-1])\.mp4$/i.test(clip.url)){
+   toast('نشانی این کلیپ معتبر نیست.');return;
+ }
+ const board=document.querySelector('#clips-wheel-rotor .pmm-wheel-board[data-index="'+i+'"]');
+ if(!board)return;
+ if(pmmClipPlayer && pmmClipBoard===board)return;
+ pmmStopClipPlayback();
+ const error=board.querySelector('.pmm-wheel-clip-error');
+ if(error){error.hidden=true;error.textContent='';}
+ const video=document.createElement('video');
+ video.className='pmm-wheel-clip-video pmm-docked-video';
+ video.controls=false;video.playsInline=true;
+ video.setAttribute('playsinline','');video.setAttribute('webkit-playsinline','');
+ video.setAttribute('disablepictureinpicture','');video.preload='none';
+ video.setAttribute('aria-label',clip.title||'کلیپ '+faNum(i+1));
+ pmmClipPlayer=video;pmmClipBoard=board;
+ pmmClipMedia.appendChild(video);
+ board.classList.add('pmm-clip-video-active');
+ pmmClipHost.hidden=false;
+ pmmPositionClipPlayer();
+ const controls=pmmClipControls;
+ controls.innerHTML='<button type="button" class="pmm-clip-pause" aria-label="توقف موقت فیلم">Ⅱ</button>'+
+    '<span class="pmm-clip-time" dir="ltr">00:00 / --:--</span>'+
+    '<input class="pmm-clip-seek" type="range" min="0" max="1000" value="0" step="1" aria-label="جابه‌جایی زمان فیلم">'+
+    '<button type="button" class="pmm-clip-sound" aria-label="بی‌صدا کردن فیلم">♫</button>';
+ const pause=controls.querySelector('.pmm-clip-pause');
+ const seek=controls.querySelector('.pmm-clip-seek');
+ const sound=controls.querySelector('.pmm-clip-sound');
+ const timeline=controls.querySelector('.pmm-clip-time');
+ const fmtTime=value=>Number.isFinite(value)&&value>=0?
+     String(Math.floor(value/60)).padStart(2,'0')+':'+String(Math.floor(value)%60).padStart(2,'0'):'--:--';
+ const refresh=()=>{
+   if(video!==pmmClipPlayer)return;
+   const d=video.duration,t=video.currentTime||0;
+   timeline.textContent=fmtTime(t)+' / '+fmtTime(d);
+   if(!seek.matches(':active')&&Number.isFinite(d)&&d>0)
+     seek.value=String(Math.min(1000,Math.round(t*1000/d)));
+   seek.disabled=!(Number.isFinite(d)&&d>0);
+   pause.textContent=video.paused?'▶':'Ⅱ';
+   pause.setAttribute('aria-label',video.paused?'ادامه پخش فیلم':'توقف موقت فیلم');
+   sound.textContent=video.muted?'×':'♫';
+   sound.setAttribute('aria-label',video.muted?'وصل کردن صدای فیلم':'بی‌صدا کردن فیلم');
+ };
+ const togglePlayback=()=>{
+   if(video.paused){const attempt=video.play();if(attempt?.catch)attempt.catch(()=>{});}else video.pause();
+   refresh();
+ };
+ controls.addEventListener('click',event=>event.stopPropagation());
+ pause.addEventListener('click',event=>{event.preventDefault();togglePlayback()});
+ sound.addEventListener('click',event=>{event.preventDefault();video.muted=!video.muted;refresh();});
+ seek.addEventListener('input',event=>{
+   event.stopPropagation();const d=video.duration;
+   if(Number.isFinite(d)&&d>0)video.currentTime=(Number(seek.value)/1000)*d;
+   refresh();
+ });
+ for(const type of ['loadedmetadata','durationchange','timeupdate','play','playing','pause','volumechange','ended'])
+    video.addEventListener(type,refresh);
+ video.addEventListener('error',()=>{
+   if(video!==pmmClipPlayer)return;
+   pmmStopClipPlayback();
+   if(error){error.textContent='پخش انجام نشد؛ اتصال اینترنت را بررسی کنید.';error.hidden=false;}
+ });
+ video.addEventListener('ended',()=>{if(video===pmmClipPlayer)pmmStopClipPlayback();});
+ video.addEventListener('click',event=>{
+   event.stopPropagation();
+   if(Date.now()>=pmmClipSuppressTapUntil)togglePlayback();
+ });
+ // Do not try to read MP4 metadata until the owner-approved Play action.
+ video.src=encodeURI(clip.url);
+ const attempt=video.play();
+ if(attempt?.catch)attempt.catch(()=>{
+   if(video!==pmmClipPlayer)return;
+   pmmStopClipPlayback();
+   if(error){error.textContent='پخش آغاز نشد؛ دوباره تلاش کنید.';error.hidden=false;}
+ });
+ refresh();stopWheelTimer();
+}
+// Swipe on the stationary small player itself to keep carousel responsive:
+// the player intentionally stays OUTSIDE the 3D wheel hit-test region.
+pmmClipHost.addEventListener('touchstart',event=>{
+ if(document.getElementById('stage').classList.contains('pmm-clip-expanded')||
+    event.target.closest('button,input,.pmm-clip-media-controls')||event.touches.length!==1){pmmClipSwipeStart=null;return;}
+ const t=event.touches[0];pmmClipSwipeStart={x:t.clientX,y:t.clientY,id:t.identifier};
+},{passive:true});
+pmmClipHost.addEventListener('touchend',event=>{
+ const start=pmmClipSwipeStart;pmmClipSwipeStart=null;
+ if(!start||document.getElementById('stage').classList.contains('pmm-clip-expanded'))return;
+ const t=Array.from(event.changedTouches).find(x=>x.identifier===start.id);if(!t)return;
+ const dx=t.clientX-start.x,dy=t.clientY-start.y;
+ if(Math.abs(dx)>30&&Math.abs(dx)>Math.abs(dy)*1.1){
+   pmmClipSuppressTapUntil=Date.now()+400;
+   activeWheels.get('clips')?.spin(dx<0?1:-1);
+ }
+},{passive:true});
+const PMM_CLIP_ENTRY_KEY='pmm_clip_entry_drawbag_v145';
+function pmmNextClipEntryIndex(){
+ const n=VIDEO_CLIPS.length;if(!n)return 0;
+ let bag=[],last=null;
+ try{
+   const stored=JSON.parse(localStorage.getItem(PMM_CLIP_ENTRY_KEY)||'null');
+   if(stored&&Array.isArray(stored.bag)&&stored.bag.length<=n&&
+      stored.bag.every(i=>Number.isInteger(i)&&i>=0&&i<n)&&
+      new Set(stored.bag).size===stored.bag.length){
+     bag=stored.bag.slice();
+     last=Number.isInteger(stored.last)&&stored.last>=0&&stored.last<n?stored.last:null;
+   }
+ }catch(_){/* private storage unavailable; still provide a random entry */}
+ if(!bag.length){
+   bag=Array.from({length:n},(_,i)=>i);
+   for(let i=bag.length-1;i>0;i--){
+      const j=photoRandInt(i+1);[bag[i],bag[j]]=[bag[j],bag[i]];
+   }
+   if(n>1&&bag[bag.length-1]===last){
+      [bag[bag.length-1],bag[0]]=[bag[0],bag[bag.length-1]];
+   }
+ }
+ const selected=bag.pop();
+ try{localStorage.setItem(PMM_CLIP_ENTRY_KEY,JSON.stringify({bag,last:selected}));}catch(_){}
+ return selected;
+}
+function pmmSaveSelectedClip(event){
+ if(event){event.preventDefault();event.stopPropagation();}
+ const current=activeWheels.get('clips')?.getIndex()??0;
+ const clip=VIDEO_CLIPS[current];
+ if(!clip?.url){toast('کلیپی برای دریافت انتخاب نشده است.');return;}
+ if(!/^https:\/\/dl\.kazeminia110\.ir\/Video\/video-clip\/video-clip (?:[1-9]|[1-9]\d|1\d\d|20[0-1])\.mp4$/i.test(clip.url)){
+   toast('نشانی دریافت معتبر نیست.');return;
+ }
+ if(window.PMMNative && typeof window.PMMNative.saveVideoToGallery==='function')
+   window.PMMNative.saveVideoToGallery(encodeURI(clip.url));
+ else toast('دریافت در گالری فقط در نسخه اندروید فعال است.');
+}
+document.getElementById('pmm-clip-fullscreen-save').addEventListener('click',pmmSaveSelectedClip);
+renderClips=function(){
+ pmmStopClipPlayback();
+ contents.innerHTML='<div class="pmm-clips-panel" dir="rtl">'+
+ '<div id="clips-wheel-canvas" class="pmm-wheel-canvas"><div id="clips-wheel-rotor" class="pmm-wheel-rotor"></div></div>'+
+ '<div class="pmm-wheel-position" id="clips-wheel-position"></div>'+
+ '<button type="button" id="pmm-clip-save" title="دریافت کلیپ انتخاب‌شده" aria-label="دریافت کلیپ انتخاب‌شده"><span class="pmm-save-illustration" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3"/></svg></span><span>دریافت</span></button>'+ 
+ '</div>';
+ const wheel=mountWheel('clips',VIDEO_CLIPS.map(c=>({title:c.title,tags:c.tags,poster:'images/clips_posters/clip_'+String(c.number).padStart(3,'0')+'.webp'})),
+  'clips-wheel-rotor','clips-wheel-canvas','clips-wheel-position',pmmStartClipInWheel);
+ wheel?.goTo(pmmNextClipEntryIndex()); // A NEW non-repeating chance once per visit.
+ document.getElementById('pmm-clip-save').addEventListener('click',pmmSaveSelectedClip);
+
+};
+
+// The original Nahj search ICON opens this route-specific full-text finder.
+// Query includes the exact 201 titles + hashtags; posters and wheel stay mounted.
+(function pmmBindClipFinder(){
+ const finder=document.getElementById('pmm-clip-find-panel');
+ const input=document.getElementById('pmm-clip-find-input');
+ const results=document.getElementById('pmm-clip-find-results');
+ const status=document.getElementById('pmm-clip-find-status');
+ const searchButton=document.getElementById('nahj-find-button');
+ const indexed=VIDEO_CLIPS.map(c=>pmmClipNormalize(c.title+' '+c.tags));
+ function search(){
+   const q=pmmClipNormalize(input.value),tokens=q.split(' ').filter(Boolean);
+   results.textContent='';results.hidden=!tokens.length;
+   if(!tokens.length){status.textContent='کلمه‌ای از عنوان یا هشتگ را وارد کنید.';return;}
+   const found=VIDEO_CLIPS.filter((clip,i)=>tokens.every(term=>indexed[i].includes(term)));
+   status.textContent=faNum(found.length)+' نتیجه برای «'+input.value.trim()+'»';
+   found.forEach(clip=>{
+      const button=document.createElement('button');button.type='button';
+      button.className='pmm-clip-find-result';
+      button.textContent=faNum(clip.number)+' ـ '+clip.title;
+      if(clip.tags){const hashtags=document.createElement('span');hashtags.textContent=clip.tags;button.appendChild(hashtags);}
+      button.addEventListener('click',()=>{
+        if(screen!=='list'||section!=='clips')return;
+        activeWheels.get('clips')?.goTo(clip.number-1);
+        finder.hidden=true;searchButton.setAttribute('aria-expanded','false');
+        toast('کلیپ '+faNum(clip.number)+' انتخاب شد؛ روی تصویر یا پخش بزنید.');
+      });
+      results.appendChild(button);
+   });
+ }
+ finder.addEventListener('submit',event=>event.preventDefault());
+ input.addEventListener('input',search);
+ document.getElementById('pmm-clip-find-clear').addEventListener('click',()=>{
+   input.value='';search();input.focus();
+ });
+ document.getElementById('pmm-clip-find-close').addEventListener('click',()=>{
+   finder.hidden=true;searchButton.setAttribute('aria-expanded','false');searchButton.focus();
+ });
+})();
 
 // About gallery: preserve original thumbnails and image detail. Native pan-x
 // for manual swipe, JS auto-advance on the same track without CSS animation.
