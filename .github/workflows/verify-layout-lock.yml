@@ -1,4 +1,4 @@
-name: Verify single approved active v129 Touch97 source; preserve V118/V117/V16/V10.4.9
+name: Verify single active v150 source; preserve historical regression checks
 on:
   pull_request:
     branches: [main]
@@ -11,10 +11,19 @@ jobs:
   verify-ui-lock:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout owner-approved v129 source
+      - name: Checkout actual v150 PR source
         uses: actions/checkout@v4
-      - name: Check every active application file against new 199-file v129 owner lock
-        run: python3 scripts/verify_owner_v129_main_lock.py
+      - name: Check v150 full source and asset locks
+        run: |
+          python3 scripts/verify_owner_v150_full_source_lock.py
+          python3 scripts/verify_owner_v150_assets.py
+          python3 - <<'PY'
+          import json
+          p=json.load(open('design/owner-active-version.json',encoding='utf-8'))
+          assert p['active_branch']=='main' and p['active_version']=='v150'
+          assert p['active_app_files']==412 and p['active_tracked_source_files']==420
+          assert not p['cleanup_authorized']
+          PY
       - name: Check active course JavaScript parsing and existing Back regression
         run: |
           node --check app/src/main/assets/pmm_offline_course.js

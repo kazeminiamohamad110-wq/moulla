@@ -12,7 +12,7 @@ import urllib.request
 from collections import Counter
 from pathlib import Path
 
-REPO = "Salmanzadeh-ir/moulla"
+REPO = "kazeminiamohamad110-wq/moulla"
 BASE = f"https://api.github.com/repos/{REPO}"
 UA = "PMM-owner-version-inventory/1.0"
 
@@ -71,22 +71,35 @@ def read_file(path, token):
 
 
 def validate_main_lock(tree, lock, config):
-    expected = lock.get("files")
+    """Validate either the historical app-only lock or the v150 full-source lock."""
+    full = isinstance(lock.get("git_blob_sha1"), dict)
+    expected = lock.get("git_blob_sha1") if full else lock.get("files")
     if not isinstance(expected, dict):
-        raise RuntimeError("Active lock missing file object")
-    app = {
+        raise RuntimeError("Active lock missing Git blob hash object")
+    paths = {
         item["path"]: item["sha"]
         for item in tree
-        if item.get("type") == "blob" and item.get("path", "").startswith("app/")
+        if item.get("type") == "blob" and (
+            (item.get("path", "").startswith(("app/", "online-content/"))
+             or item.get("path") in {"build.gradle", "settings.gradle", "gradle.properties"})
+            if full else item.get("path", "").startswith("app/")
+        )
     }
-    required = config["active_app_files"]
-    if len(app) != len(expected) or len(app) != required:
-        raise RuntimeError(f"Active app/ count mismatch: tree={len(app)} lock={len(expected)} expected={required}")
-    missing, unexpected = sorted(set(expected) - set(app)), sorted(set(app) - set(expected))
-    mismatches = [name for name, sha in expected.items() if app.get(name) != sha]
+    required = lock.get("tracked_file_count") if full else config["active_app_files"]
+    if len(paths) != len(expected) or len(paths) != required:
+        raise RuntimeError(f"Active source count mismatch: tree={len(paths)} lock={len(expected)} expected={required}")
+    missing = sorted(set(expected) - set(paths))
+    unexpected = sorted(set(paths) - set(expected))
+    mismatches = [name for name, sha in expected.items() if paths.get(name) != sha]
     if missing or unexpected or mismatches:
         raise RuntimeError(f"FAIL-CLOSED active lock: missing={missing}, unexpected={unexpected}, changed={mismatches}")
-    return {"passed": True, "active_app_file_count":len(app), "active_app_blob_hashes_match": True}
+    app_count = sum(k.startswith("app/") for k in paths)
+    if app_count != config["active_app_files"]:
+        raise RuntimeError(f"Active app count mismatch: tree={app_count} expected={config['active_app_files']}")
+    return {"passed": True, "active_app_file_count": app_count,
+            "active_source_file_count": len(paths),
+            "active_app_blob_hashes_match": True,
+            "active_source_blob_hashes_match": True}
 
 
 def generate(token):

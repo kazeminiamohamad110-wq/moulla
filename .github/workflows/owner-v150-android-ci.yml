@@ -1,0 +1,67 @@
+name: Moulla v150 active Android build and installable DEBUG
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [feature/owner-v150-consolidation-20261121, main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  v150-android-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 80
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Preserve exact owner v150 sources, 395 assets and 201 posters
+        run: |
+          set -euo pipefail
+          python3 scripts/verify_owner_v150_full_source_lock.py
+          python3 scripts/verify_owner_v150_assets.py
+          python3 - <<'PY'
+          import json
+          p=json.load(open('design/owner-active-version.json',encoding='utf-8'))
+          assert p['active_version']=='v150' and p['active_branch']=='main'
+          assert p['active_app_files']==412 and p['active_tracked_source_files']==420
+          assert not p['cleanup_authorized']
+          PY
+          node --check app/src/main/assets/pmm_offline_course.js
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-35 build-tools;35.0.0'
+      - name: Build actual v150 installable independent signed DEBUG
+        run: |
+          set -euo pipefail
+          env -u PMM_KEYSTORE_PATH -u PMM_KEYSTORE_PASSWORD -u PMM_KEY_PASSWORD gradle --no-daemon :app:assembleDebug
+      - name: Verify real APK identity, signature, poster, alignment and SHA256
+        run: |
+          set -euo pipefail
+          apk=app/build/outputs/apk/debug/app-debug.apk
+          bt="$ANDROID_HOME/build-tools/35.0.0"
+          test -s "$apk"
+          "$bt/apksigner" verify --verbose --print-certs "$apk"
+          "$bt/zipalign" -c -v 4 "$apk"
+          mkdir -p dist
+          "$bt/aapt" dump badging "$apk" > dist/package.txt
+          grep -F "name='ir.nahj.towhidkarbordi.ownerrebuilddebug'" dist/package.txt
+          grep -F "versionCode='150'" dist/package.txt
+          unzip -Z1 "$apk" | grep -Fqx 'assets/images/clips_posters/clip_001.jpg' || { echo 'Poster file name differs; inspecting APK posters'; unzip -Z1 "$apk" | grep -m1 '^assets/images/clips_posters/'; }
+          cp "$apk" dist/Moulla-v150-DEBUG.apk
+          (cd dist && sha256sum Moulla-v150-DEBUG.apk > SHA256SUMS.txt && sha256sum -c SHA256SUMS.txt)
+          git rev-parse HEAD > dist/SOURCE-COMMIT.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Moulla-v150-DEBUG-${{ github.run_id }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30

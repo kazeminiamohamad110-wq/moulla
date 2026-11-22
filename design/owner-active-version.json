@@ -1,17 +1,25 @@
 {
   "schema": "pmm-owner-active-development-version-v1",
   "project": "پای منبر مولا",
-  "repository": "Salmanzadeh-ir/moulla",
+  "repository": "kazeminiamohamad110-wq/moulla",
   "active_branch": "main",
-  "active_version": "v129",
-  "approved_source_base_commit": "e5eac6143386b3a0b2b1bbabd41b4860852266b4",
-  "active_lock": "design/owner-v129-main-app-lock.json",
-  "active_app_files": 199,
-  "active_lock_test": "scripts/verify_owner_v129_main_lock.py",
+  "active_version": "v150",
+  "approved_source_base_commit": "bb8cae428cfbb3392becd0772bc52e3f235f8566",
+  "active_lock": "design/owner-v150-full-source-lock.json",
+  "active_app_files": 412,
+  "active_lock_test": "scripts/verify_owner_v150_full_source_lock.py",
   "main_ci_context": "verify-ui-lock",
-  "owner_approval": "2026-11-20: owner explicitly approved exact v128 TOUCH97 APK (SHA256 d590deb4...) and authorized making this source the sole approved main. All v128 Recents audio behavior is preserved.",
+  "owner_approval": "2026-11-22: owner directed that v150 replace v129 as the single active development source; preserve historical references and all runtime assets.",
   "last_verified_android_ci_run": null,
-  "trial_apk": {
+  "official_market_release_modified": false,
+  "external_recoverable_backup_confirmed": false,
+  "approved_deletion_manifest": null,
+  "cleanup_authorized": false,
+  "important_note": "Only main is the active development and Android build source for v150 after merging PR #1. v129 is a historical immutable verification reference, never the active app. Never delete branches, tags, sources, posters, releases, or archives without independently verified backup and specific owner approval. Debug is not a signed marketplace release.",
+  "active_tracked_source_files": 420,
+  "active_runtime_assets": 395,
+  "active_posters": 201,
+  "historical_v129_trial_apk": {
     "type": "debug-independent-app-id-not-market-release",
     "package": "ir.nahj.towhidkarbordi.ownerpress97t128",
     "sha256": "d590deb4521bb08a17913a5c951b3ea0a0d404bb5debd313bf2f6c8874dfe76f",
@@ -19,10 +27,5 @@
     "url": null,
     "build_run": null,
     "source_app_index_blob_sha": "9c215076a6efc0a02333425bd06810ca1112b3c1"
-  },
-  "official_market_release_modified": false,
-  "external_recoverable_backup_confirmed": false,
-  "approved_deletion_manifest": null,
-  "cleanup_authorized": false,
-  "important_note": "v129 is the only owner-approved active development source in main after PR merge. Debug trial APK does NOT upgrade the official market app. Keep all old branches, tags, releases and backups until owner separately authorizes each cleanup; active development locks detect changes but do not replace GitHub administrative Rulesets."
+  }
 }
