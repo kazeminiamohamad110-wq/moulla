@@ -29,6 +29,32 @@ try{const saved=Number(localStorage.getItem(SPEED_KEY));if(SPEEDS.includes(saved
 const COURSE_REMINDER_TIME=/^(?:00:00|(?:0[5-9]|1[0-9]|2[0-3]):[0-5][0-9])$/;
 let state=loadState(),courseOpen=false,draftMode='daily1',draftWeekday=null;
 function validCourseReminderTime(value){return typeof value==='string'&&COURSE_REMINDER_TIME.test(value)}
+// Digital HH:MM entry: accept Persian/Arabic numerals, persist ASCII 24-hour HH:MM.
+function courseLatinDigits(value){
+ return String(value??'').replace(/[۰-۹]/g,c=>String(c.charCodeAt(0)-0x06F0))
+  .replace(/[٠-٩]/g,c=>String(c.charCodeAt(0)-0x0660));
+}
+function courseDigitsOnly(value){return courseLatinDigits(value).replace(/[^0-9]/g,'').slice(0,2)}
+function digitalReminderValue(){
+ const hours=courseDigitsOnly($('course-reminder-hour').value);
+ const minutes=courseDigitsOnly($('course-reminder-minute').value);
+ if(!hours||!minutes)return '';
+ return hours.padStart(2,'0')+':'+minutes.padStart(2,'0');
+}
+for(const part of ['hour','minute']){
+ const input=$('course-reminder-'+part);
+ input.addEventListener('input',()=>{
+  const normalized=courseDigitsOnly(input.value);
+  if(input.value!==normalized)input.value=normalized;
+ });
+ input.addEventListener('blur',()=>{
+  const normalized=courseDigitsOnly(input.value);
+  if(normalized)input.value=normalized.padStart(2,'0');
+ });
+}
+$('course-reminder-hour').addEventListener('input',()=>{
+ if($('course-reminder-hour').value.length===2)$('course-reminder-minute').focus();
+});
 function syncNativeCourseReminder(){
  const bridge=window.PMMNative;
  if(!bridge||typeof bridge.setCourseReminderSchedule!=='function')return;
@@ -130,7 +156,10 @@ $('course-accept-check').addEventListener('change',event=>{
 function renderSetup(){
  draftMode=state.plan?.mode||'daily1';
  draftWeekday=state.plan?.weekday??null;
- $('course-reminder-time').value=validCourseReminderTime(state.plan?.reminderTime)?state.plan.reminderTime:'09:00';
+ const savedTime=validCourseReminderTime(state.plan?.reminderTime)?state.plan.reminderTime:'09:00';
+ $('course-reminder-time').value=savedTime;
+ $('course-reminder-hour').value=savedTime.slice(0,2);
+ $('course-reminder-minute').value=savedTime.slice(3,5);
  document.querySelectorAll('[data-course-plan]').forEach(button=>{
   const selected=button.dataset.coursePlan===draftMode;
   button.classList.toggle('is-selected',selected);button.setAttribute('aria-pressed',String(selected));
@@ -158,11 +187,12 @@ document.querySelectorAll('[data-course-weekday]').forEach(button=>button.addEve
 }));
 $('course-save-plan').addEventListener('click',()=>{
  if(draftMode==='weekly'&&!Number.isInteger(draftWeekday)){showToast('لطفاً روز هفتگی خود را انتخاب کنید.');return;}
- const time=$('course-reminder-time').value;
+ const time=digitalReminderValue();
  if(!validCourseReminderTime(time)){
   showToast('ساعت یادآوری باید از ۵ صبح تا ۱۲ شب باشد. فقط ۰۰:۰۰ برای نیمه‌شب مجاز است.');
-  $('course-reminder-time').focus();return;
+  (courseDigitsOnly($('course-reminder-hour').value)?$('course-reminder-minute'):$('course-reminder-hour')).focus();return;
  }
+ $('course-reminder-time').value=time;
  const priorPlan=state.plan,priorExtras=state.extras,priorAdvance=state.pendingAdvance;
  state.plan={mode:draftMode,weekday:draftMode==='weekly'?draftWeekday:null,
   startDate:todayKey(),baseCompleted:state.completedCount,reminderTime:time};

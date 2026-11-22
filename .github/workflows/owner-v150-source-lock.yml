@@ -1,0 +1,26 @@
+name: Verify owner v150 full-source lock
+on:
+  push:
+    branches: [feature/owner-v150-consolidation-20261121, main]
+  pull_request:
+    branches: [feature/owner-v150-consolidation-20261121, main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-owner-v150-source-lock:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify exact source and media freeze
+        run: |
+          python3 scripts/verify_owner_v150_full_source_lock.py
+          python3 scripts/verify_owner_v150_assets.py
+      - name: Parse selected JS modules
+        run: |
+          node --check app/src/main/assets/pmm_video_clips_v144.js
+          node --check app/src/main/assets/pmm_offline_course.js
+          node --check online-content/worker.js

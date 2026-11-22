@@ -24,7 +24,8 @@ jobs:
           python3 -m py_compile scripts/owner_version_inventory.py scripts/owner_cleanup_plan.py
           python3 scripts/owner_version_inventory.py --self-test
           python3 scripts/owner_cleanup_plan.py --self-test
-          python3 scripts/verify_owner_v129_main_lock.py
+          python3 scripts/verify_owner_v150_full_source_lock.py
+          python3 scripts/verify_owner_v150_assets.py
           test -f docs/OWNER_SINGLE_ACTIVE_VERSION_POLICY_FA.md
           test -f design/owner-active-version.json
           python3 - <<'PY'
@@ -32,7 +33,11 @@ jobs:
           from pathlib import Path
           p=json.loads(Path("design/owner-active-version.json").read_text())
           assert p["active_branch"]=="main"
-          assert p["active_version"]=="v129"
+          assert p["active_version"]=="v150"
+          assert p["active_lock"]=="design/owner-v150-full-source-lock.json"
+          assert p["active_app_files"]==412
+          assert p["active_tracked_source_files"]==420
+          assert p["active_runtime_assets"]==395 and p["active_posters"]==201
           assert not p["cleanup_authorized"]
           assert not p["external_recoverable_backup_confirmed"]
           print("PASS: main is only approved active development source; cleanup disabled")

@@ -1,30 +1,31 @@
-# پای منبر مولا — تنها سورس فعال تأییدشده: v129 در `main`
+# پای منبر مولا (Moulla) — نسخه فعال واحد v150
 
-**وضعیت: مالک در ۲۰ نوامبر ۲۰۲۶ آخرین APK آزمایشی فشردگی ۹۷٪ را روی گوشی تأیید کرد و صریحاً دستور ثبت، قفل و جایگزینی سورس اصلی را داد.** تنها مرجع توسعه پس از ادغام PR تأییدشده، شاخه [`main`](https://github.com/Salmanzadeh-ir/moulla/tree/main) است؛ شاخه‌ها، تگ‌ها و نسخه‌های قبلی فقط برای تاریخچه/بازیابی حفظ می‌شوند و بدون مجوز جداگانه حذف نمی‌گردند.
+**تنها مرجع فعال توسعه و ساخت اندروید: شاخه `main`، نسخه `v150`.** این سیاست پس از تکمیل PR شماره ۱ در `main` اعمال می‌شود. شاخه‌ها و قفل‌های پیشین صرفاً سوابق تاریخی‌اند و بدون پشتیبان مستقل و مجوز دقیق مالک حذف نمی‌شوند.
 
-**تمایز مهم:** «نسخه فعال سورس در `main`» به معنی انتشار APK جدید در بازار نیست. شناسه `ir.nahj.towhidkarbordi`، کلید امضای رسمی، امضا، Secretها و اطلاعات کاربران دست نخورده‌اند. APK تأییدشده کاربر، Debug با شناسه نصب مستقل `ir.nahj.towhidkarbordi.ownerpress97t128` است؛ قابل جایگزینی خودکار نسخه رسمی بازار نیست.
+- مخزن: [kazeminiamohamad110-wq/moulla](https://github.com/kazeminiamohamad110-wq/moulla)
+- منبع وضعیت واحد: [`design/owner-active-version.json`](design/owner-active-version.json)
+- قفل فعلی سورس: [`design/owner-v150-full-source-lock.json`](design/owner-v150-full-source-lock.json)
+- بررسی دقیق فایل‌های سورس: `python3 scripts/verify_owner_v150_full_source_lock.py`
+- بررسی دارایی‌های محتوا: `python3 scripts/verify_owner_v150_assets.py`
+- Workflow آزمون نسخه فعال: [`.github/workflows/verify-layout-lock.yml`](.github/workflows/verify-layout-lock.yml)
+- ساخت خودکار Android نسخه ۱۵۰: [`.github/workflows/owner-v150-android-ci.yml`](.github/workflows/owner-v150-android-ci.yml)
+- ساخت دستی نسخه آزمایشی از `main`: [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml)
+- ساخت Release بدون امضا جهت امضای امن خارج از GitHub: [`.github/workflows/owner-v150-build-unsigned-handoff.yml`](.github/workflows/owner-v150-build-unsigned-handoff.yml)
 
-## وضعیت و قفل فعال
+## قفل و حفاظت منابع
 
-- نسخه فعال: **v129 = سورس بومی v128 (توقف صوت هنگام حذف کامل برنامه از Recents) + فایل دقیق `index.html` داخل APK تأییدشده با فشردگی ۹۷٪**.
-- فایل تأییدشده مالک: `PayeMenbareMola-v128-ALL-TOUCH-97PCT-OWNER-TEST-DEBUG.apk`، حجم ۳۲٬۲۱۵٬۲۳۶ بایت، SHA-256: `d590deb4521bb08a17913a5c951b3ea0a0d404bb5debd313bf2f6c8874dfe76f`.
-- اثرانگشت Git blob همان `app/src/main/assets/index.html` در APK تأییدشده: `9c215076a6efc0a02333425bd06810ca1112b3c1`.
-- وضعیت واحد ماشین‌خوان: [`design/owner-active-version.json`](design/owner-active-version.json).
-- **قفل واقعی هر ۱۹۹ فایل فعال:** [`design/owner-v129-main-app-lock.json`](design/owner-v129-main-app-lock.json).
-- کنترل سراسری قفل: `python3 scripts/verify_owner_v129_main_lock.py`.
-- آزمون‌های دیگر: `node scripts/test_owner_v128_recent_task_audio.cjs`، تست‌های v124 و ناوبری؛ برنامه WebView و Java Android است.
-- Workflow اصلی کنترل PR و `main`: [`verify-layout-lock.yml`](.github/workflows/verify-layout-lock.yml)، job `verify-ui-lock`.
-- مسیر ساخت دستی فقط از `main`: [`build-apk.yml`](.github/workflows/build-apk.yml). هیچ امضای انتشار رسمی انجام نمی‌دهد.
-- شرح تأیید نسخه جدید: [`docs/OWNER_V129_APPROVED_TOUCH97_MAIN_FA.md`](docs/OWNER_V129_APPROVED_TOUCH97_MAIN_FA.md).
+قفل v150 شامل **۴۲۰ مسیر** است: **۴۱۲ مسیر زیر `app/`، پنج مسیر `online-content/` و سه فایل تنظیمات Gradle**. داخل برنامه **۳۹۵ فایل دارایی زمان اجرا** وجود دارد که **۲۰۱ پوستر کلیپ** زیرمجموعه همان دارایی‌هاست، نه یک مجموعه مستقل. Git Blob SHA-1 و SHA-256 دارایی‌ها مستقل از هم اعتبارسنجی می‌شوند.
 
-## قابلیت‌های حفظ‌شده
+**هیچ فایل برنامه، فونت، پوستر، آرشیو، تاریخچه، شاخه، Tag یا Release نباید به دلیل قدیمی‌بودن به طور خودکار حذف شود.** کنترل‌های تاریخی v129 و نسخه‌های پیشین محفوظ‌اند. Workflow تاریخی v129 فقط با اجرای دستی و در Commit تاریخی ثابت اجرا می‌شود؛ در ساخت فعال v150 دخالت ندارد.
 
-شش گزینه اصلی با عنوان‌های یک‌اندازه لاله‌زار (۵/۶ اندازه v126)، شرح جامع صوتی، اصول کافی، توحید کاربردی، دیدن خدا در زندگی، تفأل نهج‌البلاغه، گالری ۱۰۵ تصویر، کلیپ و رسانه، دوره آفلاین ۱۰۱۹ صوت با برنامه روزانه/هفتگی، یادداشت‌های اختصاصی، حفظ موقعیت، شرط واقعی شنیدن دوسوم، اعلان‌های تفأل و دوره و رعایت ساعت استراحت و رضایت جداگانه دریافت مطالب.
+## نسخه قابل نصب و انتشار
 
-پخش صوت در خروج عادی، Home، خاموشی صفحه و رفتن به پس‌زمینه ادامه دارد، اما با **حذف کامل Task برنامه از فهرست Recent apps**، سرویس پخش توقف کرده و پیشرفت را به‌صورت همزمان ثبت می‌کند. هر گزینه واقعاً تعاملی که در کنترل‌های WebView شناسایی می‌شود، فشردگی لمسی ۹۷٪ و بازگشت آرام دارد؛ بدون تغییر در طرح ثابت و بدون فرمان اضافی.
+خروجی CI با `assembleDebug` برنامه v150 را با شناسه **`ir.nahj.towhidkarbordi.ownerrebuilddebug`** می‌سازد؛ این APK فقط برای آزمون مستقل است و نسخه رسمی بازار را جایگزین نمی‌کند. کد Release دارای شناسه اصلی **`ir.nahj.towhidkarbordi`** و `versionCode 150` است. امضای رسمی Release نیازمند Keystore و Secrets امن و بررسی گواهی امضاست؛ سبز بودن Debug یا ساخت بدون امضا، اثبات انتشار رسمی نیست.
 
-## سیاست حفاظت و تاریخچه
+برای خروجی نصب‌شدنی، آخرین اجرای موفق [GitHub Actions](https://github.com/kazeminiamohamad110-wq/moulla/actions) را باز کنید. تنها خروجی مبتنی بر Commit نهایی موفق و با SHA-256 تأییدشده معتبر است.
 
-[سیاست دائمی یک نسخه فعال](docs/OWNER_SINGLE_ACTIVE_VERSION_POLICY_FA.md) همچنان برقرار است. قفل‌های v119، v124، v126، v127 و v128، اسناد تحویل و شاخه‌های تاریخی محفوظ می‌مانند. قفل SHA به‌صورت خودکار تغییر ناخواسته فایل‌ها را **تشخیص می‌دهد**؛ جلوگیری سروری از Push/Force-push/Deletion نیازمند فعال‌سازی واقعی GitHub Rulesets توسط مدیر است و تا زمان مشاهده تنظیمات، ادعای قفل مدیریتی نمی‌شود.
+## سیاست نسخه واحد
 
-پشتیبان مستقل بیرون GitHub با بازیابی و SHA تأییدشده و مجوز جزئی مالک، پیش‌شرط حذف هر شاخه/تگ/Release قدیمی است. **هیچ پاک‌سازی تاریخی یا تغییر رسمی بازار در ارتقای v129 مجاز نشده است.**
+وجود شاخه‌ها و قفل‌های تاریخی به معنی چند نسخه فعال نیست. **فقط `main` فعال است** و هر نسخه بعدی پس از آزمون، بررسی تغییرات، تأیید مالک و ادغام مجاز، جایگزین نسخه فعال خواهد شد. حفاظت مدیریتی `main` از طریق Rulesets جدا از موفقیت Actions است و باید مستقلاً بررسی شود.
+
+[سیاست حفاظت و حذف ایمن](docs/OWNER_SINGLE_ACTIVE_VERSION_POLICY_FA.md) | [PR یکپارچه‌سازی v150](https://github.com/kazeminiamohamad110-wq/moulla/pull/1)

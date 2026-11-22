@@ -1,9 +1,6 @@
-name: Owner v129 approved main Touch97 - signed debug build and source lock
+name: HISTORICAL v129 exact approved source audit (MANUAL ONLY)
 on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main, feature/owner-v129-approved-touch97-main-20261120]
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
@@ -11,8 +8,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 75
     steps:
+      # Run the immutable v129 approval checks against the v129 source,
+      # not against the v150 pull request checkout.
       - uses: actions/checkout@v4
         with:
+          ref: 34ec8ff8dd21cecbbbe930f51d2b302f147cb74c
           fetch-depth: 0
       - name: Verify source 199-file exact lock; do not alter approved audio or other assets
         shell: bash

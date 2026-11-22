@@ -1,0 +1,19 @@
+# Local/private Android and signing material
+*.p12
+*.jks
+*.keystore
+*KEY-PASSWORD*.txt
+*.pem
+.env
+.env.*
+local.properties
+.gradle/
+build/
+app/build/
+.idea/
+*.iml
+.DS_Store
+# Test/install artifacts, never official source
+*.apk
+*.aab
+# Runtime import archives are transient; retained only until verification
