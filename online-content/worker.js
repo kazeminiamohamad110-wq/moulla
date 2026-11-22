@@ -53,7 +53,15 @@ function httpsMedia(value) {
        ((url.hostname==='aparat.com'||url.hostname==='www.aparat.com')&&/^\/v\/[a-zA-Z0-9_-]+\/?$/.test(url.pathname)));
   }catch(_){return false}
 }
-function validOwnerVideo(value){try{const u=new URL(value);return u.protocol==='https:'&&u.hostname==='dl.kazeminia110.ir'&&!u.username&&!u.password&&!u.port&&/^\\/Video\\/video-clip\\/video-clip(?:%20| )?[0-9]{1,5}\\.mp4$/i.test(u.pathname)}catch(_){return false}}\nfunction validText(value,min,max){return typeof value==='string'&&value.trim().length>=min&&value.length<=max}
+function validOwnerVideo(value){
+  try{
+    const u=new URL(value);
+    return u.protocol==='https:'&&u.hostname==='dl.kazeminia110.ir'&&
+      !u.username&&!u.password&&!u.port&&
+      /^\/Video\/video-clip\/video-clip(?:%20| )?[0-9]{1,5}\.mp4$/i.test(u.pathname);
+  }catch(_){return false;}
+}
+function validText(value,min,max){return typeof value==='string'&&value.trim().length>=min&&value.length<=max;}
 function normalizeItem(item,origin){
   if(!item||typeof item!=='object'||!SECTIONS.has(item.section)||!validText(item.title,2,180))throw Error('عنوان یا بخش معتبر نیست.');
   const section=item.section;
