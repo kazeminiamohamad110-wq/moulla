@@ -1,7 +1,7 @@
 name: Verify owner v150 full-source lock
 on:
   push:
-    branches: [feature/owner-v150-consolidation-20261121]
+    branches: [feature/owner-v150-consolidation-20261121, main]
   pull_request:
     branches: [feature/owner-v150-consolidation-20261121, main]
   workflow_dispatch:
