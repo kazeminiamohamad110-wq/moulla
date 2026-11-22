@@ -1,0 +1,113 @@
+name: Owner Cloudflare deploy for v150 clip cover management
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/owner-cloudflare-live-deploy.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: owner-live-cloudflare-panel
+  cancel-in-progress: false
+jobs:
+  deploy-existing-worker:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      PMM_CONTENT_KV_ID: ${{ secrets.PMM_CONTENT_KV_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Confirm exact locked v150 source and updated standalone admin panel
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/verify_owner_v150_full_source_lock.py
+          python3 scripts/verify_owner_v150_assets.py
+          node --check online-content/cloudflare-dashboard-single-file.js
+          grep -Fq 'download-clip-prompt' online-content/cloudflare-dashboard-single-file.js
+          grep -Fq 'upload-clip-cover' online-content/cloudflare-dashboard-single-file.js
+          grep -Fq 'copy-clip-cover-link' online-content/cloudflare-dashboard-single-file.js
+      - name: Verify presence of Cloudflare deployment permissions without exposing secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=0
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID PMM_CONTENT_KV_ID; do
+            if test -z "$(printenv "$name")"; then
+              echo "::error::Missing GitHub Actions secret: $name"
+              missing=1
+            fi
+          done
+          if test "$missing" -ne 0; then
+            echo 'NO DEPLOY: Missing Cloudflare authorization or existing KV namespace ID. Existing production Worker is unchanged.'
+            exit 1
+          fi
+      - name: Verify the EXISTING Worker bindings and secrets before any production change
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, urllib.request
+          token=os.environ['CLOUDFLARE_API_TOKEN']
+          account=os.environ['CLOUDFLARE_ACCOUNT_ID']
+          kv=os.environ['PMM_CONTENT_KV_ID']
+          assert len(account)==32 and all(c in '0123456789abcdefABCDEF' for c in account),'Invalid Cloudflare account ID'
+          assert len(kv)==32 and all(c in '0123456789abcdefABCDEF' for c in kv),'Invalid KV namespace ID'
+          url=f'https://api.cloudflare.com/client/v4/accounts/{account}/workers/scripts/pmm-content-updates/settings'
+          req=urllib.request.Request(url,headers={'Authorization':'Bearer '+token,'Accept':'application/json'})
+          with urllib.request.urlopen(req,timeout=25) as resp: data=json.load(resp)
+          if data.get('success') is not True:raise RuntimeError('Cloudflare rejected Worker settings read')
+          bindings=data.get('result',{}).get('bindings',[])
+          by_name={b.get('name'):b for b in bindings}
+          if by_name.get('PMM_CONTENT',{}).get('type')!='kv_namespace' or by_name['PMM_CONTENT'].get('namespace_id')!=kv:
+            raise RuntimeError('KV binding mismatch. Production deployment blocked to protect saved owner data.')
+          for name in ('PMM_ADMIN_PASSWORD','PMM_SESSION_SECRET'):
+            if by_name.get(name,{}).get('type') not in ('secret_text','secret'):
+              raise RuntimeError('Existing owner secret missing: '+name+'. Production deployment blocked.')
+          extras=set(by_name)-{'PMM_CONTENT','PMM_ADMIN_PASSWORD','PMM_SESSION_SECRET'}
+          if extras:
+            raise RuntimeError('Unexpected bindings exist; refuse to replace them: '+', '.join(sorted(extras)))
+          print('PASS: same existing Worker, exact KV namespace, both secrets exist. No data read or changed.')
+          PY
+      - name: Prepare ephemeral config for same Cloudflare Worker and existing KV
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,pathlib
+          p=pathlib.Path('online-content/wrangler.owner-ci.toml')
+          kv=os.environ['PMM_CONTENT_KV_ID']
+          p.write_text('name = "pmm-content-updates"\nmain = "cloudflare-dashboard-single-file.js"\ncompatibility_date = "2026-11-15"\nworkers_dev = true\nkeep_vars = true\n[[kv_namespaces]]\nbinding = "PMM_CONTENT"\nid = "'+kv+'"\n',encoding='utf-8')
+          PY
+      - name: Deploy the exact new admin code preserving secrets and KV
+        working-directory: online-content
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4 deploy --config wrangler.owner-ci.toml --keep-vars
+      - name: Check public live panel and private admin endpoint protection
+        shell: bash
+        run: |
+          set -euo pipefail
+          base=https://pmm-content-updates.kazeminia-mohamad110.workers.dev
+          for attempt in 1 2 3 4 5; do
+            if curl --fail --silent --show-error --max-time 12 "$base/admin" -o /tmp/pmm-admin.html; then
+              if grep -Fq 'download-clip-prompt' /tmp/pmm-admin.html && grep -Fq 'upload-clip-cover' /tmp/pmm-admin.html && grep -Fq 'copy-clip-cover-link' /tmp/pmm-admin.html; then
+                break
+              fi
+            fi
+            sleep 4
+          done
+          grep -Fq 'download-clip-prompt' /tmp/pmm-admin.html
+          grep -Fq 'upload-clip-cover' /tmp/pmm-admin.html
+          grep -Fq 'copy-clip-cover-link' /tmp/pmm-admin.html
+          status="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 12 "$base/api/admin/state")"
+          test "$status" = 401 || test "$status" = 403
+          echo 'PASS: live Cloudflare /admin serves cover prompt, upload, copy link; unauthenticated admin state denied.' >> "$GITHUB_STEP_SUMMARY"
