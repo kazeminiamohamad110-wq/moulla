@@ -11,8 +11,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 75
     steps:
+      # Run the immutable v129 approval checks against the v129 source,
+      # not against the v150 pull request checkout.
       - uses: actions/checkout@v4
         with:
+          ref: feature/owner-v129-approved-touch97-main-20261120
           fetch-depth: 0
       - name: Verify source 199-file exact lock; do not alter approved audio or other assets
         shell: bash
