@@ -1,0 +1,115 @@
+name: Moulla v150 owner export exact main source and clip catalog
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/owner-v150-owner-export.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  owner-export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify exact owner locked 420 files and 395 source assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/verify_owner_v150_full_source_lock.py
+          python3 scripts/verify_owner_v150_assets.py
+          python3 - <<'PY'
+          import json
+          x=json.load(open('design/owner-active-version.json'))
+          assert x['active_branch']=='main' and x['active_version']=='v150'
+          assert not x['cleanup_authorized']
+          PY
+      - name: Preserve complete source snapshot from main
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          git archive --format=zip --output=dist/Moulla-v150-MAIN-complete-source.zip HEAD
+          unzip -tq dist/Moulla-v150-MAIN-complete-source.zip
+          unzip -Z1 dist/Moulla-v150-MAIN-complete-source.zip | grep -Fqx app/src/main/assets/index.html
+          unzip -Z1 dist/Moulla-v150-MAIN-complete-source.zip | grep -Fqx design/owner-v150-full-source-lock.json
+          git rev-parse HEAD > dist/SOURCE-COMMIT.txt
+          git ls-files | LC_ALL=C sort > dist/MAIN-FILE-LIST.txt
+          printf 'Full tracked source snapshot from main; this is not a mirror of every historical ref. No signing keys included.\n' > dist/README.txt
+      - name: Package the 201 posters and real externally hosted clip URLs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p clip-catalog
+          python3 - <<'PY'
+          import csv, json, re, pathlib, zipfile
+          src=pathlib.Path('app/src/main/assets/pmm_video_clips_v144.js').read_text(encoding='utf-8')
+          m=re.search(r'Object\.freeze\((\[.*?\])\);',src,re.S)
+          assert m, 'Clip list missing'
+          clips=json.loads(m.group(1))
+          assert len(clips)==201 and [x['number'] for x in clips]==list(range(1,202))
+          assert all(x['url'].startswith('https://') and x['url'].endswith('.mp4') for x in clips)
+          poster=pathlib.Path('app/src/main/assets/images/clips_posters')
+          images=[poster/f'clip_{i:03d}.webp' for i in range(1,202)]
+          assert all(x.is_file() and x.read_bytes()[:4]==b'RIFF' for x in images)
+          d=pathlib.Path('clip-catalog')
+          (d/'clips-201-links.json').write_text(json.dumps(clips,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          with (d/'clips-201-links.csv').open('w',encoding='utf-8-sig',newline='') as f:
+              w=csv.writer(f);w.writerow(['number','title','url','tags'])
+              for x in clips:w.writerow([x.get(k,'') for k in ('number','title','url','tags')])
+          (d/'README_FA.txt').write_text('201 posters and a catalog of 201 original MP4 links. Original MP4 bytes are NOT in this source repository; the videos are hosted externally.\n',encoding='utf-8')
+          with zipfile.ZipFile('dist/Moulla-v150-201-CLIP-POSTERS-AND-LINKS.zip','w',compression=zipfile.ZIP_DEFLATED,compresslevel=6) as z:
+              for x in images:z.write(x,'posters/'+x.name)
+              for x in d.iterdir():z.write(x,x.name)
+          with zipfile.ZipFile('dist/Moulla-v150-201-CLIP-POSTERS-AND-LINKS.zip') as z:
+              assert z.testzip() is None and len([p for p in z.namelist() if p.startswith('posters/')])==201
+          PY
+      - name: Create full commit history bundle for the main branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git bundle create dist/Moulla-v150-MAIN-history.bundle main
+          git bundle verify dist/Moulla-v150-MAIN-history.bundle
+      - name: Verify all deliverables and store manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd dist && sha256sum Moulla-v150-MAIN-complete-source.zip Moulla-v150-201-CLIP-POSTERS-AND-LINKS.zip Moulla-v150-MAIN-history.bundle > SHA256SUMS.txt && sha256sum -c SHA256SUMS.txt)
+          cat dist/SHA256SUMS.txt >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Moulla-v150-MAIN-SOURCE-${{ github.run_id }}
+          path: |
+            dist/Moulla-v150-MAIN-complete-source.zip
+            dist/SOURCE-COMMIT.txt
+            dist/MAIN-FILE-LIST.txt
+            dist/README.txt
+            dist/SHA256SUMS.txt
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Moulla-v150-CLIPS-${{ github.run_id }}
+          path: |
+            dist/Moulla-v150-201-CLIP-POSTERS-AND-LINKS.zip
+            dist/SOURCE-COMMIT.txt
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Moulla-v150-GIT-HISTORY-${{ github.run_id }}
+          path: |
+            dist/Moulla-v150-MAIN-history.bundle
+            dist/SOURCE-COMMIT.txt
+          compression-level: 0
+          retention-days: 30
+          if-no-files-found: error
