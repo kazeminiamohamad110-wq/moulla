@@ -1,0 +1,144 @@
+name: Build future offline market APK with locked owner content (unsigned)
+on:
+  workflow_dispatch:
+    inputs:
+      version_code:
+        description: New release versionCode (greater than 150)
+        default: '151'
+        required: true
+        type: string
+      version_name:
+        description: New release versionName
+        default: '1.0.1'
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  prepare-next-market-version:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 85
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify immutable v150 baseline before temporary future-market build
+        run: |
+          set -euo pipefail
+          python3 scripts/verify_owner_v150_full_source_lock.py
+          python3 scripts/verify_owner_v150_assets.py
+      - name: Read all active locked owner sessions and covers into temporary APK source
+        shell: bash
+        env:
+          MARKET_VERSION_CODE: ${{ inputs.version_code }}
+          MARKET_VERSION_NAME: ${{ inputs.version_name }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,hashlib,os,pathlib,re,shutil
+          root=pathlib.Path('.')
+          code=int(os.environ['MARKET_VERSION_CODE']);name=os.environ['MARKET_VERSION_NAME']
+          assert 150<code<2100000000 and re.fullmatch(r'[0-9]+(?:\.[0-9]+){1,3}',name)
+          archive=root/'owner-content';latest=archive/'latest.json'
+          assert latest.is_file(),'No archived owner session yet. Publish and archive your session first.'
+          latest_raw=latest.read_bytes();lock=json.loads(latest_raw)
+          assert lock['schema']==1 and type(lock['revision'])==int and lock['revision']>=1
+          snapshot=archive/'revisions'/f"{lock['revision']:08d}.json"
+          assert snapshot.is_file() and snapshot.read_bytes()==latest_raw
+          assert len(lock['activeIds'])==len(set(lock['activeIds'])) and lock['activeIds'],'No active content has been archived'
+          items=[];assets=root/'app/src/main/assets'
+          for ident in lock['activeIds']:
+              assert re.fullmatch(r'[0-9a-f-]{36}',ident)
+              entry=archive/'items'/f'{ident}.json';raw=entry.read_bytes()
+              assert hashlib.sha256(raw).hexdigest()==lock['itemSha256'][ident]
+              item=json.loads(raw)
+              assert item['id']==ident and item['section'] in ('see_god','videos')
+              if 'coverPath' in item:
+                  photo=root/item['coverPath'];assert photo.is_file()
+                  assert hashlib.sha256(photo.read_bytes()).hexdigest()==item['coverSha256']
+                  dest=assets/'owner-content'/photo.name
+                  dest.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(photo,dest)
+                  item['bundledCover']='owner-content/'+photo.name
+              items.append(item)
+          index_path=assets/'index.html';index=index_path.read_text(encoding='utf-8')
+          match=re.search(r'const DATA = (\{[^\n]+\})\n',index)
+          assert match,'Approved v150 DATA source layout changed'
+          data=json.loads(match.group(1))
+          n=max(x['number'] for x in data['life'])
+          for item in items:
+              if item['section']=='see_god':
+                  n+=1
+                  data['life'].append({'number':n,'title':item['title'],'url':item['url'],'source':'ایتا' if 'eitaa.com/' in item['url'] else 'آپارات','pmmOwnerId':item['id']})
+          index=index[:match.start(1)]+json.dumps(data,ensure_ascii=False,separators=(',',':'))+index[match.end(1):]
+          anchor='const CONTACT_URL = '
+          assert index.count(anchor)==1
+          clips=[{'title':x['title'],'url':x['url'],'pmmOnlineId':x['id'],'bundledCover':x.get('bundledCover','')} for x in items if x['section']=='videos']
+          index=index.replace(anchor,'\n// Offline market archive: owner-published videos\nfor (const ownerClip of '+json.dumps(clips,ensure_ascii=False,separators=(',',':'))+') VIDEO_CLIPS.push(ownerClip);\n'+anchor,1)
+          index_path.write_text(index,encoding='utf-8')
+          updates_path=assets/'pmm_online_updates.js'
+          updates=updates_path.read_text(encoding='utf-8')
+          original='    return allowedLink(item.url);'
+          assert updates.count(original)==1
+          updates=updates.replace(original,"    return allowedLink(item.url)||(item.section==='videos'&&allowedOwnerMp4(item.url));",1)
+          needle='function safePhotoUrl(value){'
+          assert updates.count(needle)==1
+          check="""function allowedOwnerMp4(value){
+            try{var u=new URL(value);
+              return u.protocol==='https:'&&u.hostname==='dl.kazeminia110.ir'&&!u.username&&!u.password&&!u.port&&
+              /^\\/Video\\/video-clip\\/video-clip(?:%20| )?[0-9]{1,5}\\.mp4$/i.test(u.pathname)&&!u.search&&!u.hash;
+            }catch(_){return false;}
+          }
+          """
+          updates=updates.replace(needle,check+needle,1)
+          marker='// The Android host calls checkContentUpdates() on each fresh application load.'
+          assert updates.count(marker)==1
+          ids=json.dumps([x['id'] for x in items])
+          revision=lock['revision']
+          baked='\n// Owner content bundled in this market APK: no duplicate online notification.\n'+                 f"({ids}).forEach(function(id){{inMemoryIds.add(id)}});\n"+                 f"if({revision}>accepted){{accepted={revision};try{{localStorage.setItem(REVISION_KEY,String(accepted))}}catch(_){{}}}}\n"
+          updates=updates.replace(marker,baked+marker,1)
+          updates_path.write_text(updates,encoding='utf-8')
+          gradle_path=root/'app/build.gradle';gradle=gradle_path.read_text(encoding='utf-8')
+          assert re.search(r'\bversionCode\s+150\b',gradle)
+          gradle=re.sub(r'(\bversionCode\s+)150\b',lambda m:m.group(1)+str(code),gradle,count=1)
+          gradle=re.sub(r"(\bversionName\s+')[^']+(')",lambda m:m.group(1)+name+m.group(2),gradle,count=1)
+          gradle_path.write_text(gradle,encoding='utf-8')
+          pathlib.Path('handoff').mkdir(exist_ok=True)
+          pathlib.Path('handoff/OWNER-CONTENT-LOCK.json').write_bytes(latest_raw)
+          pathlib.Path('handoff/OWNER-CONTENT-COUNT.json').write_text(json.dumps({'source':'main/v150','versionCode':code,'versionName':name,'seeGodSessions':sum(x['section']=='see_god' for x in items),'videos':len(clips),'bundledCovers':sum('bundledCover' in x for x in items)},ensure_ascii=False,indent=2))
+          print('PASS: offline owner sessions and video catalog staged without changing GitHub v150 source')
+          PY
+          node --check app/src/main/assets/pmm_online_updates.js
+          git rev-parse HEAD > handoff/SOURCE-COMMIT.txt
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-35 build-tools;35.0.0'
+      - name: Build true unsigned release for separate official owner signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          sed -i '/^[[:space:]]*signingConfig signingConfigs.release[[:space:]]*$/d' app/build.gradle
+          gradle --no-daemon :app:assembleRelease
+          apk=app/build/outputs/apk/release/app-release-unsigned.apk
+          test -s "$apk"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk" > handoff/PACKAGE-METADATA.txt
+          grep -F "name='ir.nahj.towhidkarbordi'" handoff/PACKAGE-METADATA.txt
+          grep -F "versionCode='${{ inputs.version_code }}'" handoff/PACKAGE-METADATA.txt
+          cp "$apk" handoff/Moulla-NEXT-MARKET-CONTENT-UNSIGNED.apk
+          sha256sum handoff/Moulla-NEXT-MARKET-CONTENT-UNSIGNED.apk > handoff/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Moulla-OWNER-CONTENT-MARKET-UNSIGNED-${{ github.run_id }}
+          path: handoff/
+          if-no-files-found: error
+          retention-days: 30
