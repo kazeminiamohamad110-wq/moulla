@@ -1,0 +1,132 @@
+name: Archive owner See-God sessions and video clips
+on:
+  schedule:
+    - cron: '17,47 * * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [.github/workflows/owner-content-archive-sync.yml]
+permissions:
+  contents: write
+concurrency:
+  group: moulla-owner-content-archive-main
+  cancel-in-progress: false
+jobs:
+  mirror-owner-content:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify unchanged original 420 v150 source files
+        run: |
+          python3 scripts/verify_owner_v150_full_source_lock.py
+          python3 scripts/verify_owner_v150_assets.py
+      - name: Import owner's public content without credentials or deleting history
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, hashlib, pathlib, re, urllib.request, urllib.parse
+          root=pathlib.Path('owner-content');origin='https://pmm-content-updates.kazeminia-mohamad110.workers.dev'
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, *args):raise RuntimeError('HTTP redirect refused')
+          opener=urllib.request.build_opener(NoRedirect)
+          def get(url,cap):
+              req=urllib.request.Request(url,headers={'User-Agent':'MoullaOwnerSourceArchive/1','Accept':'application/json' if url.endswith('/api/manifest') else 'image/*'})
+              with opener.open(req,timeout=25) as response:
+                  assert response.status==200
+                  assert int(response.headers.get('Content-Length','0'))<=cap
+                  body=response.read(cap+1)
+                  assert len(body)<=cap
+                  return body,response.headers.get('Content-Type','').split(';')[0].lower()
+          def encoded(obj):return (json.dumps(obj,ensure_ascii=False,sort_keys=True,separators=(',',':'))+'\n').encode()
+          def digest(x):return hashlib.sha256(x).hexdigest()
+          def immutable(path,raw):
+              if path.is_file():assert path.read_bytes()==raw, 'Immutable content changed: '+str(path)
+              else:
+                  path.parent.mkdir(exist_ok=True,parents=True)
+                  path.write_bytes(raw)
+          raw,kind=get(origin+'/api/manifest',1048576)
+          assert kind=='application/json','Expected JSON content manifest'
+          manifest=json.loads(raw)
+          rev=manifest['revision']; items=manifest['items']
+          assert manifest['schema']==1 and type(rev)==int and rev>=0 and type(items)==list and len(items)<=3000
+          latest=root/'latest.json'
+          old=json.loads(latest.read_text()) if latest.is_file() else None
+          if old:assert rev>=old['revision'],'Content revision rollback detected'
+          selected=[];seen=set()
+          for original in items:
+              if original.get('section') not in ('see_god','videos'):continue
+              ident=original['id'];title=original['title'];url=original['url'];section=original['section']
+              assert re.fullmatch(r'[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}',ident) and ident not in seen
+              seen.add(ident)
+              assert isinstance(title,str) and 2<=len(title.strip())<=180
+              assert type(original['revision'])==int and 1<=original['revision']<=rev
+              parsed=urllib.parse.urlsplit(url)
+              assert parsed.scheme=='https' and not parsed.username and not parsed.password and not parsed.port and not parsed.query and not parsed.fragment
+              eitaa=parsed.hostname=='eitaa.com' and re.fullmatch(r'/(?:[A-Za-z0-9_]+/[0-9]+|joinchat/[A-Za-z0-9]+)/?',parsed.path)
+              aparat=parsed.hostname in ('aparat.com','www.aparat.com') and re.fullmatch(r'/v/[A-Za-z0-9_-]+/?',parsed.path)
+              owner=section=='videos' and parsed.hostname=='dl.kazeminia110.ir' and re.fullmatch(r'/Video/video-clip/video-clip(?:%20| )[0-9]{1,5}\.mp4',parsed.path,re.I)
+              assert eitaa or aparat or owner,'Unapproved content URL'
+              x={'id':ident,'section':section,'title':title.strip(),'url':url,'revision':original['revision']}
+              cover=original.get('coverUrl')
+              if cover:
+                  assert section=='videos'
+                  loc=urllib.parse.urlsplit(cover)
+                  assert loc.scheme=='https' and loc.netloc==urllib.parse.urlsplit(origin).netloc and not loc.query and not loc.fragment
+                  assert re.fullmatch(r'/media/[0-9a-f-]{36}',loc.path)
+                  x['coverUrl']=cover
+                  olditem=root/'items'/f'{ident}.json'
+                  prior=json.loads(olditem.read_text()) if olditem.is_file() else None
+                  if prior and prior.get('coverUrl')==cover:
+                      x['coverPath']=prior['coverPath'];x['coverSha256']=prior['coverSha256']
+                      f=pathlib.Path(x['coverPath'])
+                      assert f.is_file() and digest(f.read_bytes())==x['coverSha256']
+                  else:
+                      pixels,mime=get(cover,8388608)
+                      ext={'image/png':'.png','image/jpeg':'.jpg','image/webp':'.webp'}.get(mime)
+                      assert ext and ((mime=='image/png' and pixels.startswith(b'\x89PNG\r\n\x1a\n')) or (mime=='image/jpeg' and pixels.startswith(b'\xff\xd8\xff')) or (mime=='image/webp' and pixels[:4]==b'RIFF' and pixels[8:12]==b'WEBP'))
+                      file=root/'media'/(digest(pixels)+ext)
+                      immutable(file,pixels)
+                      x['coverPath']=file.as_posix();x['coverSha256']=digest(pixels)
+              selected.append(x)
+          assert len(seen)==len(selected)
+          if old and rev==old['revision']:
+              assert set(seen)==set(old['activeIds']),'Same revision changed active records'
+              for x in selected:
+                  existing=json.loads((root/'items'/f"{x['id']}.json").read_text())
+                  assert existing==x,'Same revision altered archived content'
+              print('UNCHANGED: owner content is already archived at revision',rev)
+          else:
+              for x in selected:immutable(root/'items'/f"{x['id']}.json",encoded(x))
+              result={'schema':1,'revision':rev,'source':origin+'/api/manifest','updatedAt':manifest.get('updatedAt'),
+                      'activeIds':[x['id'] for x in selected],'itemSha256':{x['id']:digest(encoded(x)) for x in selected}}
+              snapshot=encoded(result)
+              immutable(root/'revisions'/f'{rev:08d}.json',snapshot)
+              root.mkdir(parents=True,exist_ok=True);latest.write_bytes(snapshot)
+              print('ARCHIVED: revision',rev,'active items',len(selected),'historical items preserved')
+          PY
+      - name: Commit only append-only content records and mutable latest pointer
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -- owner-content/
+          if git diff --cached --quiet; then
+            echo 'No new owner content revision.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if git diff --cached --name-status -- owner-content/ | grep -E '^[DMR]' | grep -v $'M\towner-content/latest.json'; then
+            echo 'BLOCKED: immutable content modification or deletion' >&2
+            exit 1
+          fi
+          git config user.name 'moulla-owner-content-archive[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'content(owner): archive published sessions and clips [skip ci]'
+          git push origin HEAD:main
