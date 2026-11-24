@@ -42,6 +42,7 @@ jobs:
           node scripts/test_owner_v122_content_startup.cjs
           node --check app/src/main/assets/pmm_online_updates.js
           node scripts/test_owner_online_life_visual_match.cjs
+          node scripts/test_owner_all_native_content_parity.cjs
           bash scripts/test_native_compile.sh
       - name: Checkout owner-approved v118 historical reference
         uses: actions/checkout@v4

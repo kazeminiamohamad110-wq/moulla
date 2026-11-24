@@ -61,6 +61,16 @@ function validOwnerVideo(value){
       /^\/Video\/video-clip\/video-clip(?:%20| )?[0-9]{1,5}\.mp4$/i.test(u.pathname);
   }catch(_){return false;}
 }
+function validOwnerAudio(value,section){
+  try{
+    const u=new URL(value);
+    if(u.protocol!=='https:'||u.hostname!=='dl.kazeminia110.ir'||
+       u.username||u.password||u.port||u.search||u.hash)return false;
+    if(section==='kafi')return /^\/Audio\/kafi\/(?:kafi kotobe arbae|kafi(?: |%20)[1-9][0-9]{0,2})\.mp3$/.test(u.pathname);
+    if(section==='nahj_audio')return /^\/Audio\/nahj-al-balaghe\/tartibi\/(?:khotbe\/khotbe|name\/name|hekmat\/hekmat)(?: |%20)[A-Za-z0-9. &%]+\.mp3$/i.test(u.pathname);
+    return false;
+  }catch(_){return false;}
+}
 function validText(value,min,max){return typeof value==='string'&&value.trim().length>=min&&value.length<=max;}
 function normalizeItem(item,origin){
   if(!item||typeof item!=='object'||!SECTIONS.has(item.section)||!validText(item.title,2,180))throw Error('عنوان یا بخش معتبر نیست.');
@@ -74,7 +84,9 @@ function normalizeItem(item,origin){
     if(image.origin!==origin||!/^\/media\/[a-f0-9-]{36}$/.test(image.pathname))throw Error('تصویر باید از پنل مدیریت بارگذاری شود.');
     result.url=image.href;
   }else{
-    if(!httpsMedia(item.url)&&!(section==='videos'&&validOwnerVideo(item.url)))throw Error('لینک کلیپ باید ایتا، آپارات یا MP4 مالک باشد.');
+    if(!httpsMedia(item.url)&&!(section==='videos'&&validOwnerVideo(item.url))&&
+       !((section==='kafi'||section==='nahj_audio')&&validOwnerAudio(item.url,section)))
+      throw Error('لینک معتبر ایتا، آپارات یا فایل مستقیم صوت/تصویر مالک لازم است.');
     result.url=item.url;
     if(section==='videos'&&item.coverUrl){
       let cover;try{cover=new URL(item.coverUrl)}catch(_){throw Error('کاور نامعتبر است.')}
