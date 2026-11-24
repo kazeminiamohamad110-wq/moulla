@@ -102,6 +102,21 @@ function onlineLink(item,legacySection,number){
   if(/^https:\/\/eitaa\.com\//.test(item.url)){openEitaa(item.url);return;}
   setState('player',legacySection,{title:item.title,number:number,url:item.url});
 }
+/* Online life lessons use the SAME native lesson data and golden session row as
+   installed lessons. Do not create a separate “fresh content” card for them. */
+function appendOnlineLifeLesson(item){
+  var records=DATA.life;
+  if(!Array.isArray(records))throw Error('Life lesson catalog unavailable.');
+  // A future market APK may already bundle this online lesson. Never duplicate it.
+  if(records.some(function(row){return row.pmmOnlineId===item.id||row.url===item.url;}))return;
+  var highest=records.reduce(function(max,row){return Math.max(max,Number(row.number)||0)},0);
+  // Retain the owner's explicit lesson number when it follows the existing list.
+  var match=String(item.title).match(/جلسه[\s\u200c]*(?:شماره[\s\u200c]*)?([0-9۰-۹٠-٩]{1,4})(?![0-9۰-۹٠-٩])/);
+  var suggested=match?Number(match[1].replace(/[۰-۹]/g,function(d){return String(d.charCodeAt(0)-1776)})
+    .replace(/[٠-٩]/g,function(d){return String(d.charCodeAt(0)-1632)})):0;
+  var number=suggested>highest&&suggested<=9999?suggested:highest+1;
+  records.push({number:number,title:item.title,url:item.url,source:'آنلاین',pmmOnlineId:item.id});
+}
 function addPanel(container,group,legacySection){
   if(!container||!group.length)return;
   var panel=document.createElement('div');panel.className='pmm-fresh-content';
@@ -119,7 +134,7 @@ var initialRenderList=renderList;
 renderList=function(){
   initialRenderList();
   var source=Object.keys(sections).find(function(k){return sections[k].legacy===section});
-  if(source&&source!=='videos')addPanel(contents,onlineBySection[source],section);
+  if(source&&source!=='videos'&&source!=='see_god')addPanel(contents,onlineBySection[source],section);
 };
 var initialRenderClips=renderClips;
 renderClips=function(){
@@ -157,6 +172,9 @@ function applyManifest(manifest){
       if(!window.PMM_PHOTO_QUOTES_VIEW||typeof window.PMM_PHOTO_QUOTES_VIEW.addOnlinePhotos!=='function')
         throw Error('گالری آماده نیست.');
       window.PMM_PHOTO_QUOTES_VIEW.addOnlinePhotos([item.url]);
+    }else if(item.section==='see_god'){
+      appendOnlineLifeLesson(item);
+      onlineBySection[item.section].push(item);
     }else if(item.section==='videos'){
       if(!VIDEO_CLIPS.some(function(v){return v.pmmOnlineId===item.id})){
         VIDEO_CLIPS.push({title:item.title,url:item.url,pmmOnlineId:item.id});
