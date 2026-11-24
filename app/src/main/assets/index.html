@@ -3481,8 +3481,9 @@ function renderNahjAudioCatalog(){
     const title=nahjPartName(i+1);
     if(!nahjAudioIsOwnerURL(url)){
       const external=pmmTrustedSessionUrl(url);
-      return external?'<a class="nahj-part-card" href="'+safe(external)+'" rel="noopener noreferrer" aria-label="باز کردن '+safe(title)+'">'+
-        '<div class="nahj-part-heading"><span>'+safe(title)+'</span></div></a>':
+      return external?'<section class="nahj-part-card pmm-external-part" data-transcript-url="'+safe(external)+'">'+
+        '<div class="nahj-part-heading"><span>'+safe(title)+'</span></div>'+
+        '<a class="action" href="'+safe(external)+'" rel="noopener noreferrer" aria-label="باز کردن '+safe(title)+'">باز کردن '+safe(title)+'</a></section>':
         '<div class="nahj-audio-empty">نشانی صوت '+safe(title)+' معتبر نیست.</div>';
     }
     const rates=NAHJ_AUDIO_SPEEDS.map(rate=>
@@ -3546,8 +3547,7 @@ function openSavedLesson(which,number){
  if(!x?.url){toast('لینک این جلسه هنوز ثبت نشده است.');return}
  PMM_LEARNING_PROGRESS.openLesson(which,number);
  if(/^https:\/\/eitaa\.com\//i.test(x.url)){
-   const y=content.scrollTop;renderList();content.scrollTop=y;
-   openEitaa(x.url);
+   setState('player',which,x);
  }else setState('player',which,x);
 }
 function lessonResumeSummary(which){
@@ -3816,7 +3816,7 @@ function renderPlayer(){
   html+='<div class="player-frame"><button type="button" class="action" id="aparat-user-play">▶ پخش ویدئو</button></div>';
  }else if(/eitaa\.com/i.test(link)){
   // Other sections' Eitaa links keep their original behavior.
-  html+='<p class="player-note">این جلسه در ایتا قرار دارد.</p>';
+  html+='<p class="player-note">این جلسه در ایتا قرار دارد.</p>'+ (trustedSessionUrl?'<button type="button" class="action" id="pmm-session-eitaa">باز کردن جلسه در ایتا</button>':'');
  }else{
   // Never turn a remote manifest value into a clickable javascript:, data: or impostor-host URL.
   html+=trustedSessionUrl?'<a class="action" href="'+safe(trustedSessionUrl)+'">باز کردن جلسه</a>':
@@ -3825,6 +3825,8 @@ function renderPlayer(){
  html+='<button class="action" type="button" id="player-back">بازگشت</button></div>';
  contents.innerHTML=html;
  if(section==='kafi'&&pmmKafiAudioIsOwnerURL(link))pmmAttachKafiAudio();
+ const eitaaButton=contents.querySelector('#pmm-session-eitaa');
+ if(eitaaButton)eitaaButton.addEventListener('click',()=>openEitaa(trustedSessionUrl));
  const playVideo=contents.querySelector('#aparat-user-play');
  if(playVideo&&match){
    playVideo.addEventListener('click',()=>{
@@ -5121,5 +5123,113 @@ window.PMM_V9=Object.freeze({
     document.addEventListener('touchcancel',finish,{capture:true,passive:true});
   }
 })();
-</script></body>
+</script>
+
+<style id="pmm-session-transcript-style">
+#stage .pmm-session-tools{display:flex;align-items:center;gap:7px;direction:rtl;margin:8px 0 0}
+#stage .pmm-session-tool{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:40px;padding:4px 12px;border:1px solid #b78b4f;border-radius:9px;background:linear-gradient(#fff7df,#efd8a5);color:#073b78;font:inherit;font-weight:800;cursor:pointer}
+#stage .pmm-session-tool svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8}
+#stage .pmm-session-tool[aria-expanded="true"]{background:#083f73;color:#fff4c6}
+#stage .pmm-session-speed[hidden],#stage .pmm-session-transcript[hidden]{display:none!important}
+#stage .pmm-session-speed{margin:6px 0;color:#59421f;font-size:clamp(11px,2.6cqw,15px)}
+#stage .pmm-session-transcript{box-sizing:border-box;display:flex;flex-direction:column;width:100%;height:var(--pmm-transcript-height,160px);min-height:100px;max-height:45vh;margin:7px 0 0;overflow:hidden;background:#fff7df;border:1px solid #b78b4f;border-radius:10px;direction:rtl;animation:pmm-text-open .16s ease-out}
+#stage .pmm-transcript-header{display:flex;flex:none;align-items:center;justify-content:space-between;padding:3px 8px;border-bottom:1px solid #d9bd86;color:#073b78;font-weight:800}
+#stage .pmm-transcript-header button{min-height:36px;min-width:36px;padding:1px 8px}
+#stage .pmm-transcript-scroll{min-height:0;flex:1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;padding:8px 10px;color:#342a18;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.9;font-family:var(--pmm-text-font,inherit);font-size:clamp(13px,3.2cqw,18px);text-align:start;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+#stage .pmm-session-transcript,#stage .pmm-session-transcript *{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+@keyframes pmm-text-open{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){#stage .pmm-session-transcript{animation:none}}
+</style>
+<script id="pmm-session-transcript-controls">
+(function(){
+ 'use strict';
+ // Only owner-approved verbatim texts belong here. The key is the exact session
+ // or part media URL (normalized below), not a title or an ambiguous number.
+ // Empty catalog intentionally never fabricates a transcript.
+ const TRANSCRIPTS=Object.freeze({});
+ const GEAR='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2h4l.6 3 2 .9 2.6-1.6 2.8 2.8-1.6 2.6.9 2 3 .6v4l-3 .6-.9 2 1.6 2.6-2.8 2.8-2.6-1.6-2 .9-.6 3h-4l-.6-3-2-.9-2.6 1.6L2 21.5l1.6-2.6-.9-2-3-.6v-4l3-.6.9-2L2 7.1l2.8-2.8 2.6 1.6 2-.9z" transform="translate(2 0) scale(.83)"/><circle cx="12" cy="12" r="3"/></svg>';
+ const TEXT='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h6"/></svg>';
+ const sections=new Set(['nahj','towhid','life','kafi']);
+ let serial=0;
+ function key(raw){try{const u=new URL(raw);return decodeURI(u.href)}catch(_){return ''}}
+ function button(label,html){
+  const b=document.createElement('button');b.type='button';b.className='pmm-session-tool';b.setAttribute('aria-label',label);b.innerHTML=html;return b;
+ }
+ function makeSpeed(card,raw,existing){
+  if(existing){existing.classList.add('pmm-session-speed');return existing}
+  const row=document.createElement('div');row.className='pmm-session-speed';row.setAttribute('role','group');row.setAttribute('aria-label','سرعت پخش');
+  const audio=card.querySelector('audio');
+  const native=window.PMM_GLOBAL_AUDIO;
+  if(audio){
+   let selected=1;try{selected=Number(localStorage.getItem('pmm_session_rate_v1'))||1}catch(_){}
+   const speeds=[.75,1,1.25,1.5,2];if(!speeds.includes(selected))selected=1;
+   const apply=()=>{audio.playbackRate=selected;if(native?.approved(raw))native.speed(raw,selected);row.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.rate)===selected)))};
+   for(const rate of speeds){const b=button('سرعت '+rate+' برابر',String(rate)+'×');b.dataset.rate=String(rate);b.addEventListener('click',()=>{selected=rate;try{localStorage.setItem('pmm_session_rate_v1',String(rate))}catch(_){}apply()});row.append(b)}
+   audio.addEventListener('play',apply);apply();
+  }else{
+   row.textContent='سرعت این جلسه در پخش‌کننده آپارات یا ایتا، در صورت پشتیبانی آن سرویس، تنظیم می‌شود.';
+  }
+  return row;
+ }
+ function mount(card,raw){
+  if(card.dataset.pmmTranscriptMounted)return;
+  card.dataset.pmmTranscriptMounted='1';
+  const existing=card.querySelector('.nahj-part-speed');
+  const baseline=Math.round(card.getBoundingClientRect().height);
+  const speed=makeSpeed(card,raw,existing);
+  speed.hidden=true;speed.id='pmm-session-speed-'+(++serial);
+  const tools=document.createElement('div');tools.className='pmm-session-tools';
+  const gear=button('تنظیم سرعت پخش',GEAR);gear.setAttribute('aria-expanded','false');gear.setAttribute('aria-controls',speed.id);gear.title='سرعت پخش';
+  const text=button('متن',TEXT+'<span>متن</span>');text.setAttribute('aria-expanded','false');
+  tools.append(gear,text);
+  const panel=document.createElement('section');panel.className='pmm-session-transcript';panel.id='pmm-session-text-'+serial;panel.hidden=true;panel.setAttribute('aria-label','متن جلسه');text.setAttribute('aria-controls',panel.id);
+  const header=document.createElement('div');header.className='pmm-transcript-header';
+  const title=document.createElement('span');title.textContent='متن';const close=button('بستن متن','×');header.append(title,close);
+  const body=document.createElement('div');body.className='pmm-transcript-scroll';body.tabIndex=0;body.setAttribute('aria-label','متن قابل پیمایش');
+  const transcript=TRANSCRIPTS[key(raw)];
+  body.textContent=typeof transcript==='string'&&transcript.trim()?transcript:'متن این جلسه هنوز ثبت نشده است.';
+  panel.append(header,body);
+  for(const event of ['copy','cut','contextmenu','selectstart','dragstart'])panel.addEventListener(event,e=>e.preventDefault());
+  function closeText(focus){panel.hidden=true;text.setAttribute('aria-expanded','false');if(focus)text.focus()}
+  function closeSpeed(){speed.hidden=true;gear.setAttribute('aria-expanded','false')}
+  gear.addEventListener('click',()=>{const open=speed.hidden;closeText(false);speed.hidden=!open;gear.setAttribute('aria-expanded',String(open))});
+  text.addEventListener('click',()=>{
+   if(!panel.hidden){closeText(true);return}
+   closeSpeed();
+   // Match the closed player card, excluding the opened text. Keep the
+   // fixed close header outside the only vertically scrollable text area.
+   const h=Math.round(card.getBoundingClientRect().height);
+   panel.style.setProperty('--pmm-transcript-height',Math.max(100,h||baseline||160)+'px');
+   panel.hidden=false;text.setAttribute('aria-expanded','true');body.scrollTop=0;
+  });
+  close.addEventListener('click',()=>closeText(true));
+  panel.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();closeText(true)}});
+  const back=card.querySelector('#player-back');
+  if(back){back.before(tools,speed,panel)}else card.append(tools,speed,panel);
+ }
+ function scan(){
+  if(!sections.has(section))return;
+  if(screen==='list'&&section==='nahj'&&item?.nahjEntry){
+   contents.querySelectorAll('section.nahj-part-card').forEach(card=>{
+    const raw=card.querySelector('audio')?.dataset.src||card.dataset.transcriptUrl||'';
+    mount(card,raw);
+   });return;
+  }
+  if(screen==='player'&&item){
+   const card=contents.querySelector('.kafi-audio-card')||contents.querySelector('.content-box');
+   if(card)mount(card,item.url||'');
+  }
+ }
+ const previousRender=render;
+ render=function(){const result=previousRender.apply(this,arguments);scan();return result};
+ const previousBack=goBack;
+ goBack=function(){
+  const open=Array.from(contents.querySelectorAll('.pmm-session-transcript:not([hidden])')).pop();
+  if(open){open.querySelector('.pmm-transcript-header button').click();return}
+  return previousBack.apply(this,arguments);
+ };
+ scan();
+})();
+</script>
+</body>
 </html>
