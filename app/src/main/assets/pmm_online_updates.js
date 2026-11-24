@@ -50,6 +50,23 @@ function allowedLink(value) {
        ((u.hostname==='aparat.com'||u.hostname==='www.aparat.com')&&/^\/v\/[a-zA-Z0-9_-]+\/?$/.test(u.pathname)));
   }catch(_){return false;}
 }
+// Only exact owner-hosted media may enter native media players (not random URLs).
+function ownerAudioUrl(url,section){
+ try{
+  var u=new URL(url);
+  if(u.protocol!=='https:'||u.hostname!=='dl.kazeminia110.ir'||u.port||u.username||u.password||u.search||u.hash)return false;
+  if(section==='kafi')return /^\/Audio\/kafi\/(?:kafi kotobe arbae|kafi(?: |%20)[1-9][0-9]{0,2})\.mp3$/.test(u.pathname);
+  if(section==='nahj_audio')return /^\/Audio\/nahj-al-balaghe\/tartibi\/(?:khotbe\/khotbe|name\/name|hekmat\/hekmat)(?: |%20)[A-Za-z0-9. &%]+\.mp3$/i.test(u.pathname);
+  return false;
+ }catch(_){return false}
+}
+function ownerVideoUrl(url){
+ try{
+  var u=new URL(url);
+  return u.protocol==='https:'&&u.hostname==='dl.kazeminia110.ir'&&!u.username&&!u.password&&!u.port&&!u.search&&!u.hash&&
+   /^\/Video\/video-clip\/video-clip(?: |%20)[1-9][0-9]{0,4}\.mp4$/i.test(u.pathname);
+ }catch(_){return false}
+}
 function safePhotoUrl(value){
   try {
     var host=String(window.PMM_UPDATE_ORIGIN||'');
@@ -70,6 +87,10 @@ function validManifest(value) {
              typeof item.persian==='string'&&item.persian.trim().length>=3&&item.persian.length<=3500;
     }
     if(item.section==='photo_quotes')return safePhotoUrl(item.url);
+    if(item.section==='videos')return (allowedLink(item.url)||ownerVideoUrl(item.url))&&
+      (!item.coverUrl||safePhotoUrl(item.coverUrl));
+    if(item.section==='kafi'||item.section==='nahj_audio')
+      return allowedLink(item.url)||ownerAudioUrl(item.url,item.section);
     return allowedLink(item.url);
   });
 }
@@ -98,44 +119,65 @@ function closeModal(){
   shown=false;modal.hidden=true;
   if(focusBefore&&focusBefore.isConnected)focusBefore.focus({preventScroll:true});
 }
-function onlineLink(item,legacySection,number){
-  if(/^https:\/\/eitaa\.com\//.test(item.url)){openEitaa(item.url);return;}
-  setState('player',legacySection,{title:item.title,number:number,url:item.url});
+// Every new record is added to its ORIGINAL native renderer. No extra card styles.
+function titleNumber(title){
+  var digits=String(title).match(/(?:جلسه|شماره|خطبه|نامه|حکمت)[\s\u200c]*(?:شماره[\s\u200c]*)?([0-9۰-۹٠-٩]{1,4})(?![0-9۰-۹٠-٩])/);
+  return digits?Number(digits[1].replace(/[۰-۹]/g,d=>String(d.charCodeAt(0)-1776))
+   .replace(/[٠-٩]/g,d=>String(d.charCodeAt(0)-1632))):0;
 }
-/* Online life lessons use the SAME native lesson data and golden session row as
-   installed lessons. Do not create a separate “fresh content” card for them. */
-function appendOnlineLifeLesson(item){
-  var records=DATA.life;
-  if(!Array.isArray(records))throw Error('Life lesson catalog unavailable.');
-  // A future market APK may already bundle this online lesson. Never duplicate it.
-  if(records.some(function(row){return row.pmmOnlineId===item.id||row.url===item.url;}))return;
-  var highest=records.reduce(function(max,row){return Math.max(max,Number(row.number)||0)},0);
-  // Retain the owner's explicit lesson number when it follows the existing list.
-  var match=String(item.title).match(/جلسه[\s\u200c]*(?:شماره[\s\u200c]*)?([0-9۰-۹٠-٩]{1,4})(?![0-9۰-۹٠-٩])/);
-  var suggested=match?Number(match[1].replace(/[۰-۹]/g,function(d){return String(d.charCodeAt(0)-1776)})
-    .replace(/[٠-٩]/g,function(d){return String(d.charCodeAt(0)-1632)})):0;
-  var number=suggested>highest&&suggested<=9999?suggested:highest+1;
-  records.push({number:number,title:item.title,url:item.url,source:'آنلاین',pmmOnlineId:item.id});
+function appendNativeLesson(item,target){
+  var records=DATA[target];
+  if(!Array.isArray(records))throw Error('Native lesson catalog missing: '+target);
+  if(records.some(row=>row.pmmOnlineId===item.id||row.url===item.url))return;
+  var max=records.reduce((v,row)=>Math.max(v,Number(row.number)||0),0);
+  var suggested=titleNumber(item.title);
+  var number=suggested>max&&suggested<=500?suggested:max+1;
+  records.push({number,title:item.title,url:item.url,source:'آنلاین',pmmOnlineId:item.id});
 }
-function addPanel(container,group,legacySection){
-  if(!container||!group.length)return;
-  var panel=document.createElement('div');panel.className='pmm-fresh-content';
-  var heading=document.createElement('h3');heading.textContent='✦ مطالب تازه';panel.appendChild(heading);
-  group.forEach(function(item,i){
-    var button=document.createElement('button');
-    button.type='button';button.className='pmm-fresh-link';button.textContent=item.title;
-    var base=(legacySection==='nahj'?0:Array.isArray(DATA[legacySection])?DATA[legacySection].length:0);
-    button.addEventListener('click',function(){onlineLink(item,legacySection,base+i+1)});
-    panel.appendChild(button);
+function nahjGroup(item){
+  var url=String(item.url),title=String(item.title);
+  if(/\/khotbe\/khotbe(?: |%20)/.test(url)||/خطبه/.test(title))return 'sermons';
+  if(/\/name\/name(?: |%20)/.test(url)||/نامه/.test(title))return 'letters';
+  if(/\/hekmat\/hekmat(?: |%20)/.test(url)||/حکمت/.test(title))return 'wisdoms';
+  return null;
+}
+function appendNativeNahj(item){
+  var group=nahjGroup(item);
+  if(!group)throw Error('عنوان نهج البلاغه باید مشخص کند: خطبه، نامه یا حکمت.');
+  var records=NAHJ_AUDIO_ITEMS[group];
+  if(!Array.isArray(records))throw Error('Nahj owner audio group unavailable');
+  if(records.some(row=>row.pmmOnlineId===item.id||
+      (Array.isArray(NAHJ_AUDIO_PARTS[row.id])&&NAHJ_AUDIO_PARTS[row.id].includes(item.url))))return;
+  var number=titleNumber(item.title);
+  if(!number){number=records.reduce((n,row)=>Math.max(n,Number(row.number)||0),0)+1;}
+  var id='online-'+group+'-'+item.id;
+  records.push({id,kind:'online',title:item.title,number,pmmOnlineId:item.id});
+  NAHJ_AUDIO_PARTS[id]=[item.url];
+}
+function pruneStaleEntries(active){
+  ['towhid','life','kafi'].forEach(target=>{
+   var records=DATA[target];if(!Array.isArray(records))return;
+   for(var i=records.length-1;i>=0;i--){
+     if(records[i].pmmOnlineId&&!active.has(records[i].pmmOnlineId))records.splice(i,1);
+   }
   });
-  container.appendChild(panel);
+  ['sermons','letters','wisdoms'].forEach(group=>{
+   var records=NAHJ_AUDIO_ITEMS[group];if(!Array.isArray(records))return;
+   for(var i=records.length-1;i>=0;i--){
+     var row=records[i];
+     if(row.pmmOnlineId&&!active.has(row.pmmOnlineId)){
+       records.splice(i,1);delete NAHJ_AUDIO_PARTS[row.id];
+     }
+   }
+  });
+  for(var i=VIDEO_CLIPS.length-1;i>=0;i--){
+   if(VIDEO_CLIPS[i].pmmOnlineId&&!active.has(VIDEO_CLIPS[i].pmmOnlineId))VIDEO_CLIPS.splice(i,1);
+  }
+  VIDEO_CLIPS.forEach((clip,index)=>{if(clip.pmmOnlineId)clip.number=index+1});
+  inMemoryIds.forEach(id=>{if(!active.has(id))inMemoryIds.delete(id)});
 }
 var initialRenderList=renderList;
-renderList=function(){
-  initialRenderList();
-  var source=Object.keys(sections).find(function(k){return sections[k].legacy===section});
-  if(source&&source!=='videos'&&source!=='see_god')addPanel(contents,onlineBySection[source],section);
-};
+renderList=function(){initialRenderList()};
 var initialRenderClips=renderClips;
 renderClips=function(){
   initialRenderClips();
@@ -144,46 +186,40 @@ renderClips=function(){
     if(note)note.textContent='برای تماشای کلیپ، قاب مربوط را لمس کنید.';
   }
 };
-function updateWisdomExtras(){
-  var sectionEl=document.getElementById('pmm-fresh-wisdom');
-  if(!sectionEl){
-    sectionEl=document.createElement('section');sectionEl.id='pmm-fresh-wisdom';
-    sectionEl.className='pmm-fresh-wisdom';
-    var body=document.querySelector('#wisdom-scroll .wisdom-body');
-    if(!body)return;body.appendChild(sectionEl);
-  }
-  var items=onlineBySection.guest_sentence_new;
-  sectionEl.textContent='';sectionEl.hidden=!items.length;
-  if(!items.length)return;
-  var heading=document.createElement('h2');heading.textContent='✦ جمله‌های تازه';sectionEl.appendChild(heading);
-  items.forEach(function(item){
-    var row=document.createElement('div');row.className='pmm-fresh-wisdom-item';
-    var title=document.createElement('h3');title.textContent=item.title;
-    var arabic=document.createElement('p');arabic.lang='ar';arabic.dir='rtl';arabic.className='pmm-fresh-ar';arabic.textContent=item.arabic;
-    var persian=document.createElement('p');persian.lang='fa';persian.dir='rtl';persian.textContent=item.persian;
-    row.appendChild(title);row.appendChild(arabic);row.appendChild(persian);sectionEl.appendChild(row);
-  });
-}
 function applyManifest(manifest){
   if(!validManifest(manifest))throw Error('فهرست محتوای نامعتبر دریافت شد.');
+  // Validate all destinations BEFORE touching any existing native content.
+  manifest.items.forEach(item=>{
+    if(item.section==='nahj_audio'&&!nahjGroup(item))
+      throw Error('نوع خطبه/نامه/حکمت مشخص نشده است: '+item.title);
+  });
+  var active=new Set(manifest.items.map(item=>item.id));
+  pruneStaleEntries(active);
+  var urls=[],guest=[];
+  var groups={};Object.keys(sections).forEach(k=>{groups[k]=[]});
   manifest.items.forEach(function(item){
+    groups[item.section].push(item);
+    if(item.section==='photo_quotes'){urls.push(item.url);return;}
+    if(item.section==='guest_sentence_new'){guest.push(item);return;}
     if(inMemoryIds.has(item.id))return;
-    if(item.section==='photo_quotes'){
-      if(!window.PMM_PHOTO_QUOTES_VIEW||typeof window.PMM_PHOTO_QUOTES_VIEW.addOnlinePhotos!=='function')
-        throw Error('گالری آماده نیست.');
-      window.PMM_PHOTO_QUOTES_VIEW.addOnlinePhotos([item.url]);
-    }else if(item.section==='see_god'){
-      appendOnlineLifeLesson(item);
-      onlineBySection[item.section].push(item);
-    }else if(item.section==='videos'){
-      if(!VIDEO_CLIPS.some(function(v){return v.pmmOnlineId===item.id})){
-        VIDEO_CLIPS.push({title:item.title,url:item.url,pmmOnlineId:item.id});
-      }
-    }else onlineBySection[item.section].push(item);
+    if(item.section==='videos'){
+      if(!VIDEO_CLIPS.some(v=>v.pmmOnlineId===item.id||v.url===item.url))
+        VIDEO_CLIPS.push({number:VIDEO_CLIPS.length+1,title:item.title,url:item.url,
+         tags:'',coverUrl:item.coverUrl||'',pmmOnlineId:item.id});
+    }else if(item.section==='nahj_audio'){
+      appendNativeNahj(item);
+    }else{
+      appendNativeLesson(item,sections[item.section].legacy);
+    }
     inMemoryIds.add(item.id);
   });
-  updateWisdomExtras();
-  // Refresh only the active content page; no home layout or Back/Exit handler changes.
+  Object.keys(sections).forEach(k=>{onlineBySection[k]=groups[k]});
+  if(!window.PMM_PHOTO_QUOTES_VIEW||typeof window.PMM_PHOTO_QUOTES_VIEW.setOnlinePhotos!=='function')
+    throw Error('Native photo gallery not ready');
+  window.PMM_PHOTO_QUOTES_VIEW.setOnlinePhotos(urls);
+  if(!window.PMM_WISDOM_UI||typeof window.PMM_WISDOM_UI.setOnlineSentences!=='function')
+    throw Error('Native wisdom reader not ready');
+  window.PMM_WISDOM_UI.setOnlineSentences(guest);
   if(screen==='list'&&['nahj','towhid','life','kafi','clips'].includes(section))render();
   if(screen==='gallery'&&typeof galleryRenderGrid==='function')galleryRenderGrid();
 }

@@ -21,15 +21,15 @@ function element(){return {
 const scene=element(),notice=element(),accept=element(),later=element(),nodes={
  scene,'pmm-update-summary':notice,'pmm-update-accept':accept,'pmm-update-later':later,
 };
-const DATA={life:Array.from({length:17},(_,n)=>({number:n+1,title:'دیدن خدا در زندگی '+(n+1),url:'https://www.aparat.com/v/static'+(n+1)}))};
+const DATA={life:Array.from({length:17},(_,n)=>({number:n+1,title:'دیدن خدا در زندگی '+(n+1),url:'https://www.aparat.com/v/static'+(n+1)})),towhid:[],kafi:[]};
 const original=JSON.stringify(DATA.life);
 const contents=element();let normalRender=0;let nativeRows=[];
 const events=[];
 const context={
- window:{PMM_UPDATE_ORIGIN:'https://pmm-content-updates.kazeminia-mohamad110.workers.dev',PMM_NEW_UI:{showToast:()=>{}}},
+ window:{PMM_UPDATE_ORIGIN:'https://pmm-content-updates.kazeminia-mohamad110.workers.dev',PMM_NEW_UI:{showToast:()=>{}},PMM_PHOTO_QUOTES_VIEW:{setOnlinePhotos:()=>{}},PMM_WISDOM_UI:{setOnlineSentences:()=>{}}},
  document:{getElementById:id=>nodes[id]??null,createElement:()=>element(),querySelector:()=>null,activeElement:null},
  localStorage:{getItem:()=>null,setItem:(k,v)=>events.push({k,v})},
- DATA,contents,VIDEO_CLIPS:[],
+ DATA,contents,VIDEO_CLIPS:[],NAHJ_AUDIO_ITEMS:{sermons:[],letters:[],wisdoms:[]},NAHJ_AUDIO_PARTS:{},
  screen:'list',section:'life',
  renderList:function(){normalRender++;nativeRows=DATA.life.map(x=>x.number)},
  renderClips:()=>{},render:function(){context.renderList()},

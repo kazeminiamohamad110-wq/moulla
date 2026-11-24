@@ -50,13 +50,15 @@ const document={
 const photos=[];
 const window={
   PMM_UPDATE_ORIGIN:'https://owner-content.example',
-  PMM_PHOTO_QUOTES_VIEW:{addOnlinePhotos:(urls)=>photos.push(...urls)},
+  PMM_PHOTO_QUOTES_VIEW:{addOnlinePhotos:(urls)=>photos.push(...urls),setOnlinePhotos:(urls)=>photos.splice(0,photos.length,...urls)},
+  PMM_WISDOM_UI:{setOnlineSentences:()=>{}},
   PMM_NEW_UI:{showToast:()=>{}},
 };
 const localStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,String(v))};
 const globals={document,window,localStorage,Set,URL,console,
   renderList:()=>{},renderClips:()=>{},setState:()=>{},openEitaa:()=>{},
   contents:new Node('contents'),section:'',screen:'home',VIDEO_CLIPS:[],
+  DATA:{towhid:[],life:[],kafi:[]},NAHJ_AUDIO_ITEMS:{sermons:[],letters:[],wisdoms:[]},NAHJ_AUDIO_PARTS:{},
   goBack:()=>{},render:()=>{},
 };
 vm.runInNewContext(js,globals);

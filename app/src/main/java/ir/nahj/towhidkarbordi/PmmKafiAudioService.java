@@ -99,7 +99,7 @@ public final class PmmKafiAudioService extends Service {
                uri.getEncodedQuery()!=null||uri.getFragment()!=null)return false;
             String p=uri.getPath();
             return p!=null&&(
-                p.matches("/Audio/kafi/(?:kafi kotobe arbae|kafi (?:[1-9]|[1-4][0-9]|5[0-4]))\\.mp3")
+                p.matches("/Audio/kafi/(?:kafi kotobe arbae|kafi [1-9][0-9]{0,2})\\.mp3")
                 || p.matches("/Audio/nahj-al-balaghe/tartibi/(?:khotbe/khotbe|name/name|hekmat/hekmat) [A-Za-z0-9. &]+\\.mp3")
             );
         }catch(Exception ignored){return false;}
@@ -109,7 +109,7 @@ public final class PmmKafiAudioService extends Service {
         // Preserve Kafi's established progress keys byte-for-byte.
         String file=Uri.parse(url).getLastPathSegment();
         if("kafi kotobe arbae.mp3".equals(file))return "kafi-intro";
-        if(file!=null&&file.matches("kafi (?:[1-9]|[1-4][0-9]|5[0-4])\\.mp3"))
+        if(file!=null&&file.matches("kafi [1-9][0-9]{0,2}\\.mp3"))
             return "kafi-"+file.substring(5,file.length()-4);
         // Stable SHA-256 per approved Nahj URL avoids collisions among 1019
         // separate tracks. Never persist the URL itself as a preference key.

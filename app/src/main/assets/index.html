@@ -2615,7 +2615,7 @@ function pickWisdom(candidates){
   return wisdomLookup.get(id);
 }
 recoverBag();
-function wisdomLabel(w){return w.kind==='gharaib'?`غرائب الحدیث ${w.number}`:`حکمت شماره ${w.number}`}
+function wisdomLabel(w){return w.kind==='online'?w.title:w.kind==='gharaib'?`غرائب الحدیث ${w.number}`:`حکمت شماره ${w.number}`}
 function stopDraw(){drawRun++;clearTimeout(drawTimer);drawTimer=null;isDrawing=false;}
 function renderDrawFrame(w){
   const active=document.getElementById('wisdom-draw-active');
@@ -2850,6 +2850,9 @@ homeSubmenuTriggers.forEach(button=>button.addEventListener('click',()=>{
   openHomeSubmenu(button.dataset.homeSubmenu,button);
 }));
 function stopSound(){audioPlayer.pause();audioPlayer.removeAttribute('src');audioPlayer.load();audioBox.hidden=true;document.getElementById('wisdom-audio-parts').replaceChildren();document.getElementById('wisdom-audio-status').textContent='';selectedExplanation=null}
+const pmmOnlineWisdoms=[];
+let pmmOnlineWisdomCursor=0;
+let pmmWisdomNextButton=null;
 function showSelectedWisdom(w){
   if(!w)return;
   stopSound();current=w;
@@ -2857,7 +2860,10 @@ function showSelectedWisdom(w){
   document.getElementById('wisdom-number').textContent=wisdomLabel(current);
   document.getElementById('wisdom-arabic').textContent=current.arabic;
   document.getElementById('wisdom-persian').textContent=current.persian;
-  PMM_LEARNING_PROGRESS.setWisdom(current.id);
+  const isOnline=current.kind==='online';
+  document.getElementById('audio-action').hidden=isOnline;
+  if(pmmWisdomNextButton)pmmWisdomNextButton.hidden=!isOnline||pmmOnlineWisdoms.length<2;
+  if(!isOnline)PMM_LEARNING_PROGRESS.setWisdom(current.id);
   
   
   
@@ -3010,6 +3016,45 @@ Object.defineProperty(window,'PMM_WISDOM_PROTOTYPE',{value:Object.freeze({
   getDrawState:()=>({running:isDrawing,remaining:bag.length})
 }),writable:false});
 
+// Online guest sentences share this EXACT owner-approved reader, not a foreign card.
+// Do not change the vetted 489-entry draw bank or its non-repeating logic.
+const pmmOnlineWisdomStart=document.createElement('button');
+pmmOnlineWisdomStart.id='pmm-online-wisdom-start';
+pmmOnlineWisdomStart.type='button';
+pmmOnlineWisdomStart.className='gold-button wisdom-start-button';
+pmmOnlineWisdomStart.textContent='✦ جمله‌های تازه';
+pmmOnlineWisdomStart.hidden=true;
+wisdomIntro.appendChild(pmmOnlineWisdomStart);
+pmmOnlineWisdomStart.addEventListener('click',()=>{
+ if(!pmmOnlineWisdoms.length)return;
+ showSelectedWisdom(pmmOnlineWisdoms[pmmOnlineWisdomCursor++%pmmOnlineWisdoms.length]);
+});
+pmmWisdomNextButton=document.createElement('button');
+pmmWisdomNextButton.type='button';
+pmmWisdomNextButton.className='gold-button wisdom-start-button';
+pmmWisdomNextButton.textContent='جملهٔ تازهٔ بعدی';
+pmmWisdomNextButton.hidden=true;
+wisdomResult.appendChild(pmmWisdomNextButton);
+pmmWisdomNextButton.addEventListener('click',()=>{
+ if(pmmOnlineWisdoms.length)showSelectedWisdom(pmmOnlineWisdoms[pmmOnlineWisdomCursor++%pmmOnlineWisdoms.length]);
+});
+window.PMM_WISDOM_UI=Object.freeze({
+ setOnlineSentences:function(entries){
+  if(!Array.isArray(entries))return;
+  pmmOnlineWisdoms.length=0;
+  const used=new Set();
+  entries.forEach(item=>{
+    if(!item||used.has(item.id))return;
+    used.add(item.id);
+    pmmOnlineWisdoms.push({id:'online-'+item.id,kind:'online',number:0,
+      title:item.title,arabic:item.arabic,persian:item.persian});
+  });
+  pmmOnlineWisdomCursor=0;
+  pmmOnlineWisdomStart.hidden=!pmmOnlineWisdoms.length;
+  if(pmmWisdomNextButton)pmmWisdomNextButton.hidden=!current||current.kind!=='online'||pmmOnlineWisdoms.length<2;
+ },
+ count:function(){return pmmOnlineWisdoms.length}
+});
 window.PMM_NEW_UI=Object.freeze({
  enterWisdom, leaveWisdom, openSubmenu:key=>openHomeSubmenu(key,document.querySelector(`[data-home-submenu="${key}"]`)),
  showHome:()=>{
@@ -3176,9 +3221,11 @@ const NAHJ_AUDIO_GROUPS=Object.freeze([
   Object.freeze({id:'wisdoms',title:'حکمت‌ها',singular:'حکمت',icon:'❖',count:489})
 ]);
 const NAHJ_AUDIO_ITEMS=window.PMM_NAHJ_AUDIO_DATA?
- window.PMM_NAHJ_AUDIO_DATA.items:Object.freeze({sermons:[],letters:[],wisdoms:[]});
+ Object.fromEntries(Object.entries(window.PMM_NAHJ_AUDIO_DATA.items).map(([key,items])=>[key,items.slice()])):
+ {sermons:[],letters:[],wisdoms:[]};
 const NAHJ_AUDIO_PARTS=window.PMM_NAHJ_AUDIO_DATA?
- window.PMM_NAHJ_AUDIO_DATA.parts:Object.freeze({});
+ Object.assign({},window.PMM_NAHJ_AUDIO_DATA.parts):{};
+// Frozen owner originals remain unchanged; only these runtime copies accept new items.
 const NAHJ_AUDIO_ORDINALS=["","اول","دوم","سوم","چهارم","پنجم","ششم","هفتم","هشتم","نهم","دهم","یازدهم","دوازدهم","سیزدهم","چهاردهم","پانزدهم","شانزدهم","هفدهم","هجدهم","نوزدهم","بیستم","بیست‌ویکم","بیست‌ودوم","بیست‌وسوم","بیست‌وچهارم","بیست‌وپنجم","بیست‌وششم","بیست‌وهفتم","بیست‌وهشتم","بیست‌ونهم","سی‌ام","سی‌ویکم"];
 const nahjPartName=n=>'بخش '+(NAHJ_AUDIO_ORDINALS[n]||fa(n));
 const NAHJ_AUDIO_SPEEDS=Object.freeze([0.75,1,1.25,1.5,2]);
@@ -3191,7 +3238,7 @@ try{
 const NAHJ_SVG_PLAY='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5.5a1 1 0 0 1 1.53-.85l10 6.5a1 1 0 0 1 0 1.7l-10 6.5A1 1 0 0 1 8 18.5z"/></svg>';
 const NAHJ_SVG_PAUSE='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4.5" width="4.5" height="15" rx="1" fill="currentColor"/><rect x="13.5" y="4.5" width="4.5" height="15" rx="1" fill="currentColor"/></svg>';
 const NAHJ_SVG_HEADPHONES='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 13v-2a7.5 7.5 0 0 1 15 0v2M4.5 13H6a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 1.5-2zm15 0H18a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-1.5-2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-const nahjAudioIsOwnerURL=url=>/^https:\/\/dl\.kazeminia110\.ir\/Audio\/nahj-al-balaghe\/tartibi\/(?:khotbe\/khotbe|name\/name|hekmat\/hekmat) [A-Za-z0-9. &]+\.mp3$/i.test(url);
+const nahjAudioIsOwnerURL=url=>/^https:\/\/dl\.kazeminia110\.ir\/Audio\/nahj-al-balaghe\/tartibi\/(?:khotbe\/khotbe|name\/name|hekmat\/hekmat)(?: |%20)[A-Za-z0-9. &%]+\.mp3$/i.test(url);
 function nahjAudioTime(seconds){
  if(!Number.isFinite(seconds)||seconds<0)return '۰۰:۰۰';
  const n=Math.floor(seconds);
@@ -3432,8 +3479,12 @@ function renderNahjAudioCatalog(){
   }
   const rows=parts.map((url,i)=>{
     const title=nahjPartName(i+1);
-    if(!nahjAudioIsOwnerURL(url))
-      return '<div class="nahj-audio-empty">نشانی صوت '+safe(title)+' معتبر نیست.</div>';
+    if(!nahjAudioIsOwnerURL(url)){
+      const external=pmmTrustedSessionUrl(url);
+      return external?'<a class="nahj-part-card" href="'+safe(external)+'" rel="noopener noreferrer" aria-label="باز کردن '+safe(title)+'">'+
+        '<div class="nahj-part-heading"><span>'+safe(title)+'</span></div></a>':
+        '<div class="nahj-audio-empty">نشانی صوت '+safe(title)+' معتبر نیست.</div>';
+    }
     const rates=NAHJ_AUDIO_SPEEDS.map(rate=>
       '<button type="button" class="nahj-part-rate" data-nahj-speed="'+rate+
       '" aria-label="سرعت '+rate+' برابر" aria-pressed="false">'+rate+'x</button>'
@@ -3646,7 +3697,7 @@ try{
  if(PMM_KAFI_SPEEDS.includes(stored))pmmKafiSpeed=stored;
 }catch(_){}
 function pmmKafiAudioIsOwnerURL(url){
- return /^https:\/\/dl\.kazeminia110\.ir\/Audio\/kafi\/(?:kafi kotobe arbae|kafi (?:[1-9]|[1-4][0-9]|5[0-4]))\.mp3$/.test(String(url||''));
+ return /^https:\/\/dl\.kazeminia110\.ir\/Audio\/kafi\/(?:kafi kotobe arbae|kafi(?: |%20)[1-9][0-9]{0,2})\.mp3$/.test(String(url||''));
 }
 function pmmStopKafiAudio(){
  if(!contents)return;
@@ -3746,10 +3797,12 @@ function renderPlayer(){
  if(section==='kafi'){
   // Only approved direct Kafi MP3s; never open old Eitaa/Aparat links.
   html+=pmmKafiAudioIsOwnerURL(link)?pmmKafiCardHtml(x,link):
-    '<p class="player-note">نشانی صوت این جلسه معتبر نیست.</p>';
+    (trustedSessionUrl?(match?'<div class="player-frame"><button type="button" class="action" id="aparat-user-play">▶ پخش ویدئو</button></div>':
+     '<a class="action" href="'+safe(trustedSessionUrl)+'">باز کردن جلسه</a>'):
+    '<p class="player-note">نشانی صوت این جلسه معتبر نیست.</p>');
  }else if(x.nahjAudio){
   // Stream an owner-supplied MP3 in this WebView; never navigate to the website.
-  const valid=/^https:\/\/dl\.kazeminia110\.ir\/Audio\/nahj-al-balaghe\/tartibi\/(?:khotbe\/khotbe|name\/name|hekmat\/hekmat) [A-Za-z0-9. &]+\.mp3$/i.test(link);
+  const valid=/^https:\/\/dl\.kazeminia110\.ir\/Audio\/nahj-al-balaghe\/tartibi\/(?:khotbe\/khotbe|name\/name|hekmat\/hekmat)(?: |%20)[A-Za-z0-9. &%]+\.mp3$/i.test(link);
   if(valid){
     html+='<button type="button" class="action" id="nahj-direct-start">▶ پخش صوت</button>'+
       '<audio class="nahj-audio-player" controls preload="none" playsinline hidden data-src="'+safe(encodeURI(link))+
@@ -4461,7 +4514,11 @@ function pmmClipNormalize(text){
 function pmmStartClipInWheel(i){
  const clip=VIDEO_CLIPS[i],wheel=activeWheels.get('clips');
  if(!clip?.url||!wheel||wheel.getIndex()!==i)return;
- if(!/^https:\/\/dl\.kazeminia110\.ir\/Video\/video-clip\/video-clip (?:[1-9]|[1-9]\d|1\d\d|20[0-1])\.mp4$/i.test(clip.url)){
+ if(/^https:\/\/eitaa\.com\//.test(clip.url)){openEitaa(clip.url);return;}
+ if(/^https:\/\/(?:www\.)?aparat\.com\/v\//.test(clip.url)){
+   setState('player','clips',{title:clip.title,number:clip.number,url:clip.url});return;
+ }
+ if(!/^https:\/\/dl\.kazeminia110\.ir\/Video\/video-clip\/video-clip(?: |%20)[1-9]\d{0,4}\.mp4$/i.test(clip.url)){
    toast('نشانی این کلیپ معتبر نیست.');return;
  }
  const board=document.querySelector('#clips-wheel-rotor .pmm-wheel-board[data-index="'+i+'"]');
@@ -4586,7 +4643,7 @@ function pmmSaveSelectedClip(event){
  const current=activeWheels.get('clips')?.getIndex()??0;
  const clip=VIDEO_CLIPS[current];
  if(!clip?.url){toast('کلیپی برای دریافت انتخاب نشده است.');return;}
- if(!/^https:\/\/dl\.kazeminia110\.ir\/Video\/video-clip\/video-clip (?:[1-9]|[1-9]\d|1\d\d|20[0-1])\.mp4$/i.test(clip.url)){
+ if(!/^https:\/\/dl\.kazeminia110\.ir\/Video\/video-clip\/video-clip(?: |%20)[1-9]\d{0,4}\.mp4$/i.test(clip.url)){
    toast('نشانی دریافت معتبر نیست.');return;
  }
  if(window.PMMNative && typeof window.PMMNative.saveVideoToGallery==='function')
@@ -4601,7 +4658,7 @@ renderClips=function(){
  '<div class="pmm-wheel-position" id="clips-wheel-position"></div>'+
  '<button type="button" id="pmm-clip-save" title="دریافت کلیپ انتخاب‌شده" aria-label="دریافت کلیپ انتخاب‌شده"><span class="pmm-save-illustration" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3"/></svg></span><span>دریافت</span></button>'+ 
  '</div>';
- const wheel=mountWheel('clips',VIDEO_CLIPS.map(c=>({title:c.title,tags:c.tags,poster:'images/clips_posters/clip_'+String(c.number).padStart(3,'0')+'.webp'})),
+ const wheel=mountWheel('clips',VIDEO_CLIPS.map(c=>({title:c.title,tags:c.tags,poster:c.coverUrl||(c.pmmOnlineId?null:'images/clips_posters/clip_'+String(c.number).padStart(3,'0')+'.webp')})),
   'clips-wheel-rotor','clips-wheel-canvas','clips-wheel-position',pmmStartClipInWheel);
  wheel?.goTo(pmmNextClipEntryIndex()); // A NEW non-repeating chance once per visit.
  document.getElementById('pmm-clip-save').addEventListener('click',pmmSaveSelectedClip);
@@ -4616,8 +4673,8 @@ renderClips=function(){
  const results=document.getElementById('pmm-clip-find-results');
  const status=document.getElementById('pmm-clip-find-status');
  const searchButton=document.getElementById('nahj-find-button');
- const indexed=VIDEO_CLIPS.map(c=>pmmClipNormalize(c.title+' '+c.tags));
  function search(){
+   const indexed=VIDEO_CLIPS.map(c=>pmmClipNormalize(c.title+' '+(c.tags||'')));
    const q=pmmClipNormalize(input.value),tokens=q.split(' ').filter(Boolean);
    results.textContent='';results.hidden=!tokens.length;
    if(!tokens.length){status.textContent='کلمه‌ای از عنوان یا هشتگ را وارد کنید.';return;}
@@ -4930,6 +4987,17 @@ window.PMM_V9=Object.freeze({
        if(typeof src!=='string'||!/^https:\/\//.test(src)||paths.includes(src))return;
        paths.push(src);photos.push(src);
      });
+   },
+   setOnlinePhotos:function(urls){
+     if(!Array.isArray(urls))return;
+     const wanted=new Set(urls.filter(src=>typeof src==='string'&&/^https:\/\//.test(src)));
+     for(let i=paths.length-1;i>=0;i--){
+       if(/^https:\/\//.test(paths[i])&&!wanted.has(paths[i]))paths.splice(i,1);
+     }
+     for(let i=photos.length-1;i>=0;i--){
+       if(/^https:\/\//.test(photos[i])&&!wanted.has(photos[i]))photos.splice(i,1);
+     }
+     this.addOnlinePhotos(Array.from(wanted));
    }
  });
 })();
