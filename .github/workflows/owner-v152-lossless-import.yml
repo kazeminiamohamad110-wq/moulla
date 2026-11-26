@@ -1,0 +1,128 @@
+name: Import owner-approved Moulla R5 lossless source
+on:
+  push:
+    branches: [transfer/owner-v152-r5-lossless]
+    paths: [Moulla-R5-Lossless-Delta.zip]
+permissions:
+  contents: read
+concurrency:
+  group: owner-v152-lossless-import
+  cancel-in-progress: false
+jobs:
+  validate-build:
+    if: github.ref == 'refs/heads/transfer/owner-v152-r5-lossless'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Check exact owner payload and import only into transfer branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/transfer/owner-v152-r5-lossless
+          base=1281fabbb59adce4391828a6f50e9738423c396d
+          git merge-base --is-ancestor "$base" HEAD
+          echo 'e5eb7f2f566488c6191481bf814db23f0372e530484902f0d521bace086901b7  Moulla-R5-Lossless-Delta.zip' | sha256sum -c -
+          python3 - <<'PYCODE'
+          import hashlib,json,zipfile,pathlib,subprocess
+          sha=lambda b:hashlib.sha256(b).hexdigest()
+          base='1281fabbb59adce4391828a6f50e9738423c396d'
+          allowed={'Moulla-R5-Lossless-Delta.zip','.github/workflows/owner-v152-lossless-import.yml'}
+          raw=subprocess.check_output(['git','diff','--name-status','--no-renames','-z',base,'HEAD']).decode().split('\0')
+          for status,path in zip(raw[0:-1:2],raw[1:-1:2]):
+              if status=='A' and path in allowed:continue
+              if path.startswith('owner-content/') and (status=='A' or status=='M' and path in {'owner-content/latest.json','owner-content/all-v152/latest.json'}):continue
+              raise SystemExit('Unexpected pre-import change: '+status+' '+path)
+          with zipfile.ZipFile('Moulla-R5-Lossless-Delta.zip') as z:
+              m=json.loads(z.read('manifest.json'));assert m['base']==base and len(m['files'])==871
+              assert len(z.namelist())==872 and set(z.namelist())=={'manifest.json'}|{'files/'+n for n in m['files']}
+              updates=[]
+              for n,x in m['files'].items():
+                  p=pathlib.Path(n);assert not p.is_absolute() and '..' not in p.parts and '.git' not in p.parts and '\x00' not in n
+                  assert not p.is_symlink() and all(not q.is_symlink() for q in p.parents)
+                  before=sha(p.read_bytes()) if p.is_file() else None
+                  assert before==x['before'],n
+                  v=z.read('files/'+n);assert sha(v)==x['after'],n
+                  updates.append((p,v))
+              for p,v in updates:
+                  p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(v)
+              subprocess.run(['git','add','-f','--',*[str(p) for p,v in updates]],check=True)
+              for p,v in updates:assert sha(p.read_bytes())==m['files'][p.as_posix()]['after']
+          PYCODE
+          if git diff --cached --name-only --diff-filter=D | grep .; then exit 1; fi
+      - name: Offline regression and source preservation
+        run: bash scripts/run_v152_local_checks.sh
+      - name: Check lossless decoded pixels and prepare optimized assets
+        run: |
+          python -m pip install pillow
+          python - <<'PYCODE'
+          from PIL import Image
+          from pathlib import Path
+          import json
+          m=json.loads(Path('optimization/lossless-assets.json').read_text());assert len(m['images'])==36
+          for r in m['images']:
+              with Image.open(Path('app/src/main/assets')/r['original']) as a,Image.open(Path('optimization/derived')/r['optimized']) as b:
+                  a=a.convert('RGBA');b=b.convert('RGBA');assert a.size==b.size and a.tobytes()==b.tobytes(),r['original']
+          print('PASS 36 pixel-exact images')
+          PYCODE
+          python optimization/prepare_lossless_assets.py
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-35 build-tools;35.0.0'
+      - name: Build independent Debug APK using verified lossless assets
+        run: env -u PMM_KEYSTORE_PATH -u PMM_KEYSTORE_PASSWORD -u PMM_KEY_PASSWORD gradle --no-daemon :app:assembleDebug -PpmmLosslessAssets=true
+      - name: Verify debug signature and exact optimized APK assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=app/build/outputs/apk/debug/app-debug.apk
+          bt="$ANDROID_HOME/build-tools/35.0.0"
+          "$bt/apksigner" verify --verbose "$apk"
+          "$bt/zipalign" -c -v 4 "$apk"
+          mkdir -p dist
+          "$bt/aapt" dump badging "$apk" > dist/package.txt
+          grep -F "name='ir.nahj.towhidkarbordi.ownerrebuilddebug'" dist/package.txt
+          grep -F "versionCode='152'" dist/package.txt
+          python - <<'PYCODE'
+          import json,zipfile,hashlib
+          m=json.load(open('optimization/lossless-assets.json'))
+          with zipfile.ZipFile('app/build/outputs/apk/debug/app-debug.apk') as z:
+              actual={n[7:]:hashlib.sha256(z.read(n)).hexdigest() for n in z.namelist() if n.startswith('assets/') and not n.endswith('/')}
+              assert actual==m['staged_assets']
+          PYCODE
+          cp "$apk" dist/Moulla-v152-R5-LOSSLESS-DEBUG.apk
+          (cd dist && sha256sum Moulla-v152-R5-LOSSLESS-DEBUG.apk > SHA256SUMS.txt)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Moulla-v152-R5-LOSSLESS-DEBUG-${{ github.run_id }}
+          path: dist/
+          if-no-files-found: error
+      - name: Commit only after successful verification and APK build
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'moulla-owner-lossless-import[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm -- Moulla-R5-Lossless-Delta.zip
+          git commit -m 'Integrate verified R5 and pixel-exact optional lossless assets'
+          git push origin HEAD:refs/heads/transfer/owner-v152-r5-lossless
+          echo "Imported source commit: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+          echo 'Main and Cloudflare remain unchanged.' >> "$GITHUB_STEP_SUMMARY"
