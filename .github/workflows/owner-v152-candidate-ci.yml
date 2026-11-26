@@ -2,7 +2,9 @@ name: Moulla v152 candidate local-source verification and independent debug
 on:
   workflow_dispatch:
   push:
-    branches: [feature/owner-v152-candidate]
+    branches: [feature/owner-v152-candidate, transfer/owner-v152-r5-lossless, main]
+  pull_request:
+    branches: [main]
 permissions:
   contents: read
 jobs:
@@ -41,6 +43,8 @@ jobs:
           node scripts/test_pmm_content_server.mjs
           node scripts/test_pmm_content_server.mjs --single-file
           bash scripts/test_native_compile.sh
+      - name: Stage checked lossless assets
+        run: python3 optimization/prepare_lossless_assets.py
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -52,7 +56,7 @@ jobs:
         with:
           packages: 'platforms;android-35 build-tools;35.0.0'
       - name: Build independent DEBUG only, no publishing key
-        run: env -u PMM_KEYSTORE_PATH -u PMM_KEYSTORE_PASSWORD -u PMM_KEY_PASSWORD gradle --no-daemon :app:assembleDebug
+        run: env -u PMM_KEYSTORE_PATH -u PMM_KEYSTORE_PASSWORD -u PMM_KEY_PASSWORD gradle --no-daemon :app:assembleDebug -PpmmLosslessAssets=true
       - name: Verify test APK metadata and signature
         run: |
           set -euo pipefail

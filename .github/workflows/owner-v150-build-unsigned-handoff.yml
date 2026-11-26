@@ -1,9 +1,5 @@
 name: Owner v150 REAL unsigned handoff for offline signing
 on:
-  push:
-    branches: [feature/owner-v150-consolidation-20261121, main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
@@ -13,6 +9,9 @@ jobs:
     timeout-minutes: 80
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: 1281fabbb59adce4391828a6f50e9738423c396d
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
