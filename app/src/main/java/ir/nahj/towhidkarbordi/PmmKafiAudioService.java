@@ -125,7 +125,7 @@ public final class PmmKafiAudioService extends Service {
     }
     private static int clamp(int value){return Math.max(0,Math.min(MAX_SECOND,value));}
     private static float clampRate(float value) {
-        if(!Float.isFinite(value))return 1f;
+        if((Float.isNaN(value)||Float.isInfinite(value)))return 1f;
         return Math.max(0.75f,Math.min(2f,value));
     }
     static int savedSecond(Context ctx,String url) {
@@ -139,7 +139,7 @@ public final class PmmKafiAudioService extends Service {
     }
     private void captureListening() {
         final long now=SystemClock.elapsedRealtime();
-        if(playing&&lastListenWall>0&&now>lastListenWall){
+        if(playing&&!buffering&&lastListenWall>0&&now>lastListenWall){
             final long delta=Math.min(2200L,now-lastListenWall);
             listenedMillis=Math.min((long)MAX_SECOND*1000L,listenedMillis+delta);
         }
@@ -325,8 +325,8 @@ public final class PmmKafiAudioService extends Service {
                     duration=Math.max(0,mp.getDuration()/1000);
                     if(position>0&&mp.getDuration()>2000)
                         mp.seekTo(Math.min(position*1000,mp.getDuration()-1200));
-                    if(audioManager!=null)audioManager.requestAudioFocus(focusListener,
-                        AudioManager.STREAM_MUSIC,AudioManager.AUDIOFOCUS_GAIN);
+                    if(audioManager!=null&&audioManager.requestAudioFocus(focusListener,
+                        AudioManager.STREAM_MUSIC,AudioManager.AUDIOFOCUS_GAIN)!=AudioManager.AUDIOFOCUS_REQUEST_GRANTED){updateSession();return;}
                     mp.start();playing=true;lastListenWall=SystemClock.elapsedRealtime();
                     mp.setPlaybackParams(new PlaybackParams().setSpeed(rate));
                     handler.removeCallbacks(pulse);handler.post(pulse);
@@ -349,8 +349,8 @@ public final class PmmKafiAudioService extends Service {
             });
             player.setOnInfoListener((mp,what,extra)->{
                 if(mp!=player)return false;
-                if(what==MediaPlayer.MEDIA_INFO_BUFFERING_START){buffering=true;updateSession();}
-                else if(what==MediaPlayer.MEDIA_INFO_BUFFERING_END){buffering=false;updateSession();}
+                if(what==MediaPlayer.MEDIA_INFO_BUFFERING_START){captureListening();buffering=true;updateSession();}
+                else if(what==MediaPlayer.MEDIA_INFO_BUFFERING_END){captureListening();buffering=false;updateSession();}
                 return false;
             });
             player.prepareAsync();
@@ -370,8 +370,8 @@ public final class PmmKafiAudioService extends Service {
     private void resume() {
         if(player==null||preparing||!prepared||playing)return;
         try {
-            if(audioManager!=null)audioManager.requestAudioFocus(focusListener,
-                AudioManager.STREAM_MUSIC,AudioManager.AUDIOFOCUS_GAIN);
+            if(audioManager!=null&&audioManager.requestAudioFocus(focusListener,
+                AudioManager.STREAM_MUSIC,AudioManager.AUDIOFOCUS_GAIN)!=AudioManager.AUDIOFOCUS_REQUEST_GRANTED)return;
             player.start();
             player.setPlaybackParams(new PlaybackParams().setSpeed(rate));
             playing=true;lastListenWall=SystemClock.elapsedRealtime();updateSession();
@@ -390,7 +390,7 @@ public final class PmmKafiAudioService extends Service {
     }
     private void speed(float requested) {
         rate=clampRate(requested);
-        if(player!=null&&prepared) {
+        if(player!=null&&prepared&&playing) {
             try{player.setPlaybackParams(new PlaybackParams().setSpeed(rate));}
             catch(Exception ignored){}
         }
@@ -403,12 +403,13 @@ public final class PmmKafiAudioService extends Service {
                 intent.getFloatExtra("rate",1f),
                 clamp(intent.getIntExtra("resumeSeconds",0)));
         }else if(ACTION_TOGGLE.equals(action)){
-            if(playing)pause();else resume();
+            String target=intent.getStringExtra("url");
+            if(target==null||source.equals(target)){if(preparing){saveSecond();discardPlayer();stopSelf();}else if(playing)pause();else resume();}
         }else if(ACTION_SEEK.equals(action)){
             if(intent.getStringExtra("url")!=null&&intent.getStringExtra("url").equals(source))
                 seek(intent.getIntExtra("seconds",0));
         }else if(ACTION_SPEED.equals(action)){
-            speed(intent.getFloatExtra("rate",1f));
+            if(source.equals(intent.getStringExtra("url")))speed(intent.getFloatExtra("rate",1f));
         }else if(ACTION_STOP.equals(action))stopSelf();
         else if(!active)stopSelf();
         return START_NOT_STICKY;

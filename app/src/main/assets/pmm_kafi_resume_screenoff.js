@@ -40,7 +40,7 @@
 
   function attach(card,record) {
     if(!nativeAvailable()||!card||!record||!pmmKafiAudioIsOwnerURL(record.url))return false;
-    const url=record.url;
+    const url=decodeURI(record.url);
     const audio=card.querySelector('audio.kafi-audio-media');
     const toggle=card.querySelector('[data-kafi-toggle]');
     const seek=card.querySelector('[data-kafi-seek]');
@@ -65,6 +65,7 @@
       if(!card.isConnected) {
         stopped=true;
         clearInterval(timer);
+        window.removeEventListener('pmm:app-foreground',update);
         return;
       }
       const state=nativeState(url);
@@ -99,7 +100,7 @@
       }else {
         status.textContent='';
       }
-      if(state.active||!preparing)localBusy=false;
+      if(state.active)localBusy=false;
     }
 
     function applySpeed() {
@@ -151,7 +152,7 @@
     const audio=card.querySelector('audio.kafi-audio-media');
     const status=card.querySelector('[data-kafi-status]');
     if(!audio||!status)return;
-    const url=record.url;
+    const url=decodeURI(record.url);
     const saved=getFallback(url);
     if(saved>0)status.textContent='ادامه از '+nahjAudioTime(saved);
     let last=-1;

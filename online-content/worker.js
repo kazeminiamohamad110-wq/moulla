@@ -11,10 +11,28 @@ const ALLOWED_MEDIA_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_ITEMS = 3000;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const MAX_MANIFEST_BYTES = 1024 * 1024;
+const MAX_TRANSCRIPT_BYTES = 128 * 1024;
+const TEXT_SECTIONS = new Set(['nahj_audio','towhid','see_god','kafi']);
+function checkedTranscript(value){
+ if(typeof value!=='string'||!value.trim()||value.includes('\0')||new TextEncoder().encode(value).byteLength>MAX_TRANSCRIPT_BYTES)throw Error('متن خالی یا بیشتر از ۱۲۸ کیلوبایت است.');
+ return value;
+}
+function transcriptMap(old){return {...(old.transcripts||{})};}
+function fitsManifest(next){return new TextEncoder().encode(JSON.stringify(next)).byteLength<=MAX_MANIFEST_BYTES;}
+
 const jsonHeaders = {'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'no-referrer'};
 const textHeaders = {'content-type':'text/html; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'no-referrer',
   'content-security-policy':"default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'"};
 
+async function limitedBody(req,limit){
+  const reported=Number(req.headers.get('content-length')||0);
+  if(!Number.isFinite(reported)||reported<0||reported>limit)throw Error('body too large');
+  if(!req.body)return new Uint8Array();
+  const reader=req.body.getReader(), chunks=[];let size=0;
+  try{for(;;){const {value,done}=await reader.read();if(done)break;size+=value.byteLength;if(size>limit){await reader.cancel();throw Error('body too large')}chunks.push(value)}}finally{reader.releaseLock()}
+  const result=new Uint8Array(size);let offset=0;for(const c of chunks){result.set(c,offset);offset+=c.byteLength}return result;
+}
+async function limitedJson(req,limit=65536){return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(await limitedBody(req,limit)))}
 function response(data, status=200) {return new Response(JSON.stringify(data), {status,headers:jsonHeaders});}
 function deny(status=403, error='دسترسی مجاز نیست') {return response({ok:false,error},status);}
 function encode(input) {return btoa(String.fromCharCode(...new TextEncoder().encode(input))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
@@ -48,7 +66,7 @@ function sameOrigin(req,url) {
 function httpsMedia(value) {
   try{
     const url=new URL(value);
-    return url.protocol==='https:'&&!url.username&&!url.password&&!url.port&&
+    return url.protocol==='https:'&&!url.username&&!url.password&&!url.port&&!url.search&&!url.hash&&
       ((url.hostname==='eitaa.com'&&/^\/(?:[a-zA-Z0-9_]+\/[0-9]+|joinchat\/[A-Za-z0-9]+)\/?$/.test(url.pathname))||
        ((url.hostname==='aparat.com'||url.hostname==='www.aparat.com')&&/^\/v\/[a-zA-Z0-9_-]+\/?$/.test(url.pathname)));
   }catch(_){return false}
@@ -57,7 +75,7 @@ function validOwnerVideo(value){
   try{
     const u=new URL(value);
     return u.protocol==='https:'&&u.hostname==='dl.kazeminia110.ir'&&
-      !u.username&&!u.password&&!u.port&&
+      !u.username&&!u.password&&!u.port&&!u.search&&!u.hash&&
       /^\/Video\/video-clip\/video-clip(?:%20| )?[0-9]{1,5}\.mp4$/i.test(u.pathname);
   }catch(_){return false;}
 }
@@ -66,7 +84,7 @@ function validOwnerAudio(value,section){
     const u=new URL(value);
     if(u.protocol!=='https:'||u.hostname!=='dl.kazeminia110.ir'||
        u.username||u.password||u.port||u.search||u.hash)return false;
-    if(section==='kafi')return /^\/Audio\/kafi\/(?:kafi kotobe arbae|kafi(?: |%20)[1-9][0-9]{0,2})\.mp3$/.test(u.pathname);
+    if(section==='kafi')return /^\/Audio\/kafi\/(?:kafi(?: |%20)kotobe(?: |%20)arbae|kafi(?: |%20)[1-9][0-9]{0,2})\.mp3$/.test(u.pathname);
     if(section==='nahj_audio')return /^\/Audio\/nahj-al-balaghe\/tartibi\/(?:khotbe\/khotbe|name\/name|hekmat\/hekmat)(?: |%20)[A-Za-z0-9. &%]+\.mp3$/i.test(u.pathname);
     return false;
   }catch(_){return false;}
@@ -81,7 +99,7 @@ function normalizeItem(item,origin){
     result.arabic=item.arabic.trim();result.persian=item.persian.trim();
   } else if(section==='photo_quotes'){
     let image;try{image=new URL(item.url)}catch(_){throw Error('آدرس تصویر معتبر نیست.')}
-    if(image.origin!==origin||!/^\/media\/[a-f0-9-]{36}$/.test(image.pathname))throw Error('تصویر باید از پنل مدیریت بارگذاری شود.');
+    if(image.origin!==origin||image.username||image.password||image.search||image.hash||!/^\/media\/[a-f0-9-]{36}$/.test(image.pathname))throw Error('تصویر باید از پنل مدیریت بارگذاری شود.');
     result.url=image.href;
   }else{
     if(!httpsMedia(item.url)&&!(section==='videos'&&validOwnerVideo(item.url))&&
@@ -90,7 +108,7 @@ function normalizeItem(item,origin){
     result.url=item.url;
     if(section==='videos'&&item.coverUrl){
       let cover;try{cover=new URL(item.coverUrl)}catch(_){throw Error('کاور نامعتبر است.')}
-      if(cover.origin!==origin||!/^\/media\/[a-f0-9-]{36}$/.test(cover.pathname))throw Error('کاور باید در پنل بارگذاری شود.');
+      if(cover.origin!==origin||cover.username||cover.password||cover.search||cover.hash||!/^\/media\/[a-f0-9-]{36}$/.test(cover.pathname))throw Error('کاور باید در پنل بارگذاری شود.');
       result.coverUrl=cover.href;
     }
   }
@@ -136,7 +154,7 @@ export default {
       if(!sameOrigin(req,u))return deny();
       if(!env.PMM_ADMIN_PASSWORD||!env.PMM_SESSION_SECRET||
          env.PMM_ADMIN_PASSWORD.length<16||env.PMM_SESSION_SECRET.length<32)return deny(503,'مدیریت هنوز ایمن پیکربندی نشده است.');
-      let data;try{data=await req.json()}catch(_){return deny(400,'درخواست نامعتبر است')}
+      let data;try{data=await limitedJson(req)}catch(_){return deny(400,'درخواست نامعتبر است')}
       const candidate=typeof data.password==='string'?data.password:'';
       if(candidate.length>500)return deny(400);
       if(!equal(await hash(candidate),await hash(env.PMM_ADMIN_PASSWORD)))return deny(401,'رمز مدیریت اشتباه است.');
@@ -158,7 +176,7 @@ export default {
         const type=(req.headers.get('content-type')||'').split(';')[0].toLowerCase();
         const reported=Number(req.headers.get('content-length')||0);
         if(!ALLOWED_MEDIA_TYPES.has(type)||reported>MAX_IMAGE_BYTES)return deny(413,'فقط تصویر JPEG/PNG/WebP تا ۸ مگابایت مجاز است.');
-        const buf=await req.arrayBuffer();
+        let buf;try{buf=(await limitedBody(req,MAX_IMAGE_BYTES)).buffer}catch(_){return deny(413,'حجم تصویر بیش از حد مجاز است.')}
         if(buf.byteLength>MAX_IMAGE_BYTES||!validImageMagic(new Uint8Array(buf),type))return deny(400,'فایل تصویر معتبر نیست.');
         const key=crypto.randomUUID();
         await env.PMM_CONTENT.put(MEDIA_PREFIX+key,buf,{metadata:{contentType:type}});
@@ -167,28 +185,52 @@ export default {
       if(path==='/api/admin/publish'&&method==='POST'){
         const old=await getManifest(env);
         if(old.items.length>=MAX_ITEMS)return deny(409,'حداکثر تعداد مطالب ثبت شده است.');
-        let data;try{data=await req.json()}catch(_){return deny(400,'داده نامعتبر است.')}
+        let data;try{data=await limitedJson(req,256*1024)}catch(_){return deny(400,'داده نامعتبر است.')}
         let item;try{item=normalizeItem(data,u.origin)}catch(e){return deny(400,e.message)}
         item.revision=old.revision+1;
         const next={schema:1,revision:old.revision+1,updatedAt:new Date().toISOString(),
           items:[...old.items,item]};
-        if(JSON.stringify(next).length>MAX_MANIFEST_BYTES)return deny(413,'حجم فهرست بیش از حد است.');
+        const texts=transcriptMap(old);
+        if(data.transcript!==undefined){
+          if(!TEXT_SECTIONS.has(item.section))return deny(400,'این بخش متن جلسه ندارد.');
+          try{texts[item.id]={revision:next.revision,text:checkedTranscript(data.transcript)}}catch(e){return deny(400,e.message)}
+        }
+        if(Object.keys(texts).length)next.transcripts=texts;
+        if(!fitsManifest(next))return deny(413,'حجم فهرست بیش از حد است.');
+        await env.PMM_CONTENT.put(KEY,JSON.stringify(next));
+        return response({ok:true,manifest:next});
+      }
+      if(path==='/api/admin/transcript'&&method==='POST'){
+        let data;try{data=await limitedJson(req,256*1024)}catch(_){return deny(400,'داده نامعتبر است.')}
+        if(!data||typeof data.id!=='string'||!Number.isSafeInteger(data.expectedRevision))return deny(400,'شناسه یا نسخه نامعتبر است.');
+        const old=await getManifest(env),item=old.items.find(row=>row.id===data.id);
+        if(!item||!TEXT_SECTIONS.has(item.section))return deny(404,'جلسه یافت نشد.');
+        if(old.revision!==data.expectedRevision)return deny(409,'فهرست تغییر کرده است؛ ابتدا تازه‌سازی کنید.');
+        let text;try{text=data.text===null?null:checkedTranscript(data.text)}catch(e){return deny(400,e.message)}
+        const texts=transcriptMap(old);
+        if((texts[item.id]?.text??null)===text)return response({ok:true,manifest:old});
+        const next={...old,revision:old.revision+1,updatedAt:new Date().toISOString()};
+        if(text===null)delete texts[item.id];else texts[item.id]={revision:next.revision,text};
+        next.transcripts=texts;
+        // Item id, URL and original publication revision stay unchanged.
+        if(!fitsManifest(next))return deny(413,'ظرفیت فهرست محتوا تکمیل شده است.');
         await env.PMM_CONTENT.put(KEY,JSON.stringify(next));
         return response({ok:true,manifest:next});
       }
       if(path==='/api/admin/remove'&&method==='POST'){
-        let body;try{body=await req.json()}catch(_){return deny(400)}
+        let body;try{body=await limitedJson(req)}catch(_){return deny(400)}
         if(typeof body.id!=='string')return deny(400);
         const old=await getManifest(env),nextItems=old.items.filter(item=>item.id!==body.id);
         if(nextItems.length===old.items.length)return deny(404,'مطلب پیدا نشد.');
         const next={schema:1,revision:old.revision+1,updatedAt:new Date().toISOString(),items:nextItems};
+        const texts=transcriptMap(old);delete texts[body.id];if(Object.keys(texts).length||old.transcripts)next.transcripts=texts;
         await env.PMM_CONTENT.put(KEY,JSON.stringify(next));
         // A deleted photo should not consume the owner's limited free KV storage.
         const removed=old.items.find(item=>item.id===body.id);
         if(removed?.section==='photo_quotes'||removed?.coverUrl){
           try{
             const uri=new URL(removed.coverUrl||removed.url);
-            if(uri.origin===u.origin && /^\/media\/[a-f0-9-]{36}$/.test(uri.pathname)){
+            if(uri.origin===u.origin && /^\/media\/[a-f0-9-]{36}$/.test(uri.pathname)&&!nextItems.some(item=>item.url===uri.href||item.coverUrl===uri.href)){
               await env.PMM_CONTENT.delete(MEDIA_PREFIX+uri.pathname.slice(7));
             }
           }catch(_){/* The manifest removal itself has succeeded. */}

@@ -1,4 +1,4 @@
-name: Build future offline market APK with locked owner content (unsigned)
+name: Historical v150 offline market builder (do not publish as v152)
 on:
   workflow_dispatch:
     inputs:
@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: 1281fabbb59adce4391828a6f50e9738423c396d
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
@@ -108,7 +108,7 @@ jobs:
           gradle_path.write_text(gradle,encoding='utf-8')
           pathlib.Path('handoff').mkdir(exist_ok=True)
           pathlib.Path('handoff/OWNER-CONTENT-LOCK.json').write_bytes(latest_raw)
-          pathlib.Path('handoff/OWNER-CONTENT-COUNT.json').write_text(json.dumps({'source':'main/v150','versionCode':code,'versionName':name,'seeGodSessions':sum(x['section']=='see_god' for x in items),'videos':len(clips),'bundledCovers':sum('bundledCover' in x for x in items)},ensure_ascii=False,indent=2))
+          pathlib.Path('handoff/OWNER-CONTENT-COUNT.json').write_text(json.dumps({'source':'historical/v150','versionCode':code,'versionName':name,'seeGodSessions':sum(x['section']=='see_god' for x in items),'videos':len(clips),'bundledCovers':sum('bundledCover' in x for x in items)},ensure_ascii=False,indent=2))
           print('PASS: offline owner sessions and video catalog staged without changing GitHub v150 source')
           PY
           node --check app/src/main/assets/pmm_online_updates.js

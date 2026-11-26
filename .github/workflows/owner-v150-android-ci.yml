@@ -1,4 +1,4 @@
-name: Moulla v150 active Android build and installable DEBUG
+name: Moulla v152 active Android build and installable DEBUG
 on:
   pull_request:
     branches: [main]
@@ -16,19 +16,43 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Preserve exact owner v150 sources, 395 assets and 201 posters
+      - name: Verify v152 sources, 1195 original assets and 201 posters
         run: |
           set -euo pipefail
-          python3 scripts/verify_owner_v150_full_source_lock.py
-          python3 scripts/verify_owner_v150_assets.py
+          python3 scripts/verify_owner_v152_candidate.py
           python3 - <<'PY'
           import json
           p=json.load(open('design/owner-active-version.json',encoding='utf-8'))
-          assert p['active_version']=='v150' and p['active_branch']=='main'
-          assert p['active_app_files']==412 and p['active_tracked_source_files']==420
+          assert p['active_version']=='v152' and p['active_branch']=='main'
+          assert p['active_app_files']==1212 and p['active_tracked_source_files']==1220
           assert not p['cleanup_authorized']
           PY
           node --check app/src/main/assets/pmm_offline_course.js
+      - name: Checkout immutable v150 reference
+        uses: actions/checkout@v4
+        with:
+          ref: 1281fabbb59adce4391828a6f50e9738423c396d
+          path: preserved-v150
+          persist-credentials: false
+      - name: Verify unchanged historical v150 lock and assets
+        working-directory: preserved-v150
+        run: |
+          python3 scripts/verify_owner_v150_full_source_lock.py
+          python3 scripts/verify_owner_v150_assets.py
+      - name: Verify lossless pixels and stage assets
+        run: |
+          python3 -m pip install pillow
+          python3 - <<'PY'
+          import json
+          from PIL import Image
+          from pathlib import Path
+          m=json.load(open('optimization/lossless-assets.json'))
+          assert len(m['images'])==36
+          for x in m['images']:
+              with Image.open(Path('app/src/main/assets')/x['original']) as a, Image.open(Path('optimization/derived')/x['optimized']) as b:
+                  a=a.convert('RGBA'); b=b.convert('RGBA'); assert a.size==b.size and a.tobytes()==b.tobytes(),x['original']
+          PY
+          python3 optimization/prepare_lossless_assets.py
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -39,10 +63,10 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: 'platforms;android-35 build-tools;35.0.0'
-      - name: Build actual v150 installable independent signed DEBUG
+      - name: Build actual v152 installable independent signed DEBUG
         run: |
           set -euo pipefail
-          env -u PMM_KEYSTORE_PATH -u PMM_KEYSTORE_PASSWORD -u PMM_KEY_PASSWORD gradle --no-daemon :app:assembleDebug
+          env -u PMM_KEYSTORE_PATH -u PMM_KEYSTORE_PASSWORD -u PMM_KEY_PASSWORD gradle --no-daemon :app:assembleDebug -PpmmLosslessAssets=true
       - name: Verify real APK identity, signature, poster, alignment and SHA256
         run: |
           set -euo pipefail
@@ -54,14 +78,14 @@ jobs:
           mkdir -p dist
           "$bt/aapt" dump badging "$apk" > dist/package.txt
           grep -F "name='ir.nahj.towhidkarbordi.ownerrebuilddebug'" dist/package.txt
-          grep -F "versionCode='150'" dist/package.txt
+          grep -F "versionCode='152'" dist/package.txt
           unzip -Z1 "$apk" | grep -Fqx 'assets/images/clips_posters/clip_001.jpg' || { echo 'Poster file name differs; inspecting APK posters'; unzip -Z1 "$apk" | grep -m1 '^assets/images/clips_posters/'; }
-          cp "$apk" dist/Moulla-v150-DEBUG.apk
-          (cd dist && sha256sum Moulla-v150-DEBUG.apk > SHA256SUMS.txt && sha256sum -c SHA256SUMS.txt)
+          cp "$apk" dist/Moulla-v152-LOSSLESS-DEBUG.apk
+          (cd dist && sha256sum Moulla-v152-LOSSLESS-DEBUG.apk > SHA256SUMS.txt && sha256sum -c SHA256SUMS.txt)
           git rev-parse HEAD > dist/SOURCE-COMMIT.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: Moulla-v150-DEBUG-${{ github.run_id }}
+          name: Moulla-v152-LOSSLESS-DEBUG-${{ github.run_id }}
           path: dist/
           if-no-files-found: error
           retention-days: 30

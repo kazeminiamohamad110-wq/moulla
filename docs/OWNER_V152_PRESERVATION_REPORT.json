@@ -1,0 +1,26 @@
+{
+  "original_archive_files": 597,
+  "original_files_byte_identical": 587,
+  "modified_original_files": [
+    "app/build.gradle",
+    "app/src/main/assets/index.html",
+    "app/src/main/assets/pmm_kafi_resume_screenoff.js",
+    "app/src/main/assets/pmm_online_updates.js",
+    "app/src/main/assets/pmm_unified_background_audio_v124.js",
+    "app/src/main/java/ir/nahj/towhidkarbordi/MainActivity.java",
+    "app/src/main/java/ir/nahj/towhidkarbordi/PmmKafiAudioService.java",
+    "app/src/main/java/ir/nahj/towhidkarbordi/PmmMediaSaver.java",
+    "online-content/cloudflare-dashboard-single-file.js",
+    "online-content/worker.js"
+  ],
+  "deleted_original_files": [],
+  "base_commit": "1281fabbb59adce4391828a6f50e9738423c396d",
+  "new_runtime_assets": 798,
+  "all_runtime_assets": 1193,
+  "source_lock_files": 1218,
+  "all_original_images_fonts_unchanged": true,
+  "local_checks_exit_code": 0,
+  "android_build_performed": false,
+  "github_push_performed": false,
+  "cloudflare_deployed": false
+}

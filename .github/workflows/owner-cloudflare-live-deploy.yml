@@ -1,7 +1,7 @@
-name: Owner Cloudflare deploy for v150 clip cover management
+name: Owner approved R5 Cloudflare panel deployment
 on:
   push:
-    branches: [main]
+    branches: [transfer/owner-v152-r5-lossless]
     paths: [.github/workflows/owner-cloudflare-live-deploy.yml]
   workflow_dispatch:
 permissions:
@@ -11,6 +11,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy-existing-worker:
+    if: github.ref == 'refs/heads/transfer/owner-v152-r5-lossless' || (github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -24,12 +25,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Confirm exact locked v150 source and updated standalone admin panel
+      - name: Confirm exact R5 locked source and tested admin transcript support
         shell: bash
         run: |
           set -euo pipefail
-          python3 scripts/verify_owner_v150_full_source_lock.py
-          python3 scripts/verify_owner_v150_assets.py
+          python3 scripts/verify_owner_v152_candidate.py
+          node scripts/test_v152_online_transcripts.mjs
+          node scripts/test_v152_worker.mjs
+          node scripts/test_pmm_content_server.mjs --single-file
           node --check online-content/cloudflare-dashboard-single-file.js
           grep -Fq 'download-clip-prompt' online-content/cloudflare-dashboard-single-file.js
           grep -Fq 'upload-clip-cover' online-content/cloudflare-dashboard-single-file.js
@@ -76,6 +79,19 @@ jobs:
             raise RuntimeError('Unexpected bindings exist; refuse to replace them: '+', '.join(sorted(extras)))
           print('PASS: same existing Worker, exact KV namespace, both secrets exist. No data read or changed.')
           PY
+      - name: Snapshot existing public content without changing KV
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 25 https://pmm-content-updates.kazeminia-mohamad110.workers.dev/api/manifest -o "$RUNNER_TEMP/pmm-before.json"
+          python3 - <<'PY'
+          import os,json,pathlib
+          p=pathlib.Path(os.environ['RUNNER_TEMP'])/'pmm-before.json'
+          data=json.loads(p.read_text())
+          assert data['schema']==1 and type(data['revision']) is int and isinstance(data['items'],list)
+          assert data['revision']>=2 and any(i.get('id')=='57642ffc-392e-46f9-bb90-d4a245f8aa31' for i in data['items']),'Existing session 19 missing: stop deployment'
+          print('PASS: current public manifest valid; revision',data['revision'],'items',len(data['items']))
+          PY
       - name: Prepare ephemeral config for same Cloudflare Worker and existing KV
         shell: bash
         run: |
@@ -99,7 +115,7 @@ jobs:
           base=https://pmm-content-updates.kazeminia-mohamad110.workers.dev
           for attempt in 1 2 3 4 5; do
             if curl --fail --silent --show-error --max-time 12 "$base/admin" -o /tmp/pmm-admin.html; then
-              if grep -Fq 'download-clip-prompt' /tmp/pmm-admin.html && grep -Fq 'upload-clip-cover' /tmp/pmm-admin.html && grep -Fq 'copy-clip-cover-link' /tmp/pmm-admin.html; then
+              if grep -Fq 'transcript-file' /tmp/pmm-admin.html && grep -Fq '/api/admin/transcript' /tmp/pmm-admin.html && grep -Fq 'download-clip-prompt' /tmp/pmm-admin.html && grep -Fq 'upload-clip-cover' /tmp/pmm-admin.html && grep -Fq 'copy-clip-cover-link' /tmp/pmm-admin.html; then
                 break
               fi
             fi
@@ -108,6 +124,19 @@ jobs:
           grep -Fq 'download-clip-prompt' /tmp/pmm-admin.html
           grep -Fq 'upload-clip-cover' /tmp/pmm-admin.html
           grep -Fq 'copy-clip-cover-link' /tmp/pmm-admin.html
+          grep -Fq 'transcript-file' /tmp/pmm-admin.html
+          grep -Fq '/api/admin/transcript' /tmp/pmm-admin.html
           status="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 12 "$base/api/admin/state")"
           test "$status" = 401 || test "$status" = 403
-          echo 'PASS: live Cloudflare /admin serves cover prompt, upload, copy link; unauthenticated admin state denied.' >> "$GITHUB_STEP_SUMMARY"
+          transcript_status="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 12 -X POST -H 'Content-Type: application/json' --data '{}' "$base/api/admin/transcript")"
+          test "$transcript_status" = 401 || test "$transcript_status" = 403
+          curl --fail --silent --show-error --max-time 25 "$base/api/manifest" -o "$RUNNER_TEMP/pmm-after.json"
+          python3 - <<'PY'
+          import os,json,pathlib
+          d=pathlib.Path(os.environ['RUNNER_TEMP'])
+          before=json.loads((d/'pmm-before.json').read_text())
+          after=json.loads((d/'pmm-after.json').read_text())
+          assert before==after,'Public manifest changed during deployment; investigate before any further operation.'
+          print('PASS: identical public manifest before and after deployment; all existing sessions retained.')
+          PY
+          echo 'PASS: live R5 admin text upload UI, previous cover controls, unauthorized access denied, identical existing manifest.' >> "$GITHUB_STEP_SUMMARY"

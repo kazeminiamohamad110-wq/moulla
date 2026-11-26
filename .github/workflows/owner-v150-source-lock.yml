@@ -1,4 +1,4 @@
-name: Verify owner v150 full-source lock
+name: Verify active v152 and historical v150 full-source locks
 on:
   push:
     branches: [feature/owner-v150-consolidation-20261121, main]
@@ -16,6 +16,16 @@ jobs:
         with:
           python-version: '3.12'
       - name: Verify exact source and media freeze
+        run: |
+          python3 scripts/verify_owner_v152_candidate.py
+      - name: Checkout immutable v150 reference
+        uses: actions/checkout@v4
+        with:
+          ref: 1281fabbb59adce4391828a6f50e9738423c396d
+          path: preserved-v150
+          persist-credentials: false
+      - name: Verify unchanged historical v150 lock and assets
+        working-directory: preserved-v150
         run: |
           python3 scripts/verify_owner_v150_full_source_lock.py
           python3 scripts/verify_owner_v150_assets.py

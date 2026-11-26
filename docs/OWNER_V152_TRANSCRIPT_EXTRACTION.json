@@ -1,0 +1,59 @@
+{
+  "docx_files": 791,
+  "groups": {
+    "sermons": {
+      "entries": 237,
+      "parts": 358
+    },
+    "letters": {
+      "entries": 79,
+      "parts": 145
+    },
+    "wisdoms": {
+      "entries": 480,
+      "parts": 513
+    }
+  },
+  "exceptions": [
+    {
+      "group": "sermons",
+      "number": 209,
+      "reason": "internal non-heading subdivisions; whole text preserved; only map to a single audio unless reviewed",
+      "source": "خطبه 209.docx"
+    },
+    {
+      "group": "sermons",
+      "number": 224,
+      "reason": "internal non-heading subdivisions; whole text preserved; only map to a single audio unless reviewed",
+      "source": "خطبه 224.docx"
+    },
+    {
+      "group": "sermons",
+      "number": 97,
+      "reason": "no separately titled source found"
+    },
+    {
+      "group": "sermons",
+      "number": 133,
+      "reason": "no separately titled source found"
+    },
+    {
+      "group": "sermons",
+      "number": 148,
+      "reason": "no separately titled source found"
+    },
+    {
+      "group": "sermons",
+      "number": 162,
+      "reason": "no separately titled source found"
+    },
+    {
+      "group": "wisdoms",
+      "number": 451,
+      "reason": "internal non-heading subdivisions; whole text preserved; only map to a single audio unless reviewed",
+      "source": "حکمت 451.docx"
+    }
+  ],
+  "total_characters": 11759781,
+  "total_parts": 1016
+}

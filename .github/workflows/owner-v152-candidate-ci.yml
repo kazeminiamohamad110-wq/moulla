@@ -1,0 +1,77 @@
+name: Moulla v152 candidate local-source verification and independent debug
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/owner-v152-candidate, transfer/owner-v152-r5-lossless, main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  verify-and-debug:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify candidate and original asset preservation
+        run: python3 scripts/verify_owner_v152_candidate.py
+      - name: Offline tests
+        run: |
+          set -euo pipefail
+          node scripts/test_v152_transcript_audio.cjs
+          node scripts/test_v152_bundled_content.cjs
+          python3 scripts/test_v152_archive.py
+          node scripts/test_v152_worker.mjs
+          node scripts/test_v152_online_transcripts.mjs
+          node scripts/test_v152_reader_r4.cjs
+          node scripts/test_owner_all_native_content_parity.cjs
+          node scripts/test_owner_online_life_visual_match.cjs
+          node scripts/test_owner_v124_seven_fixes.cjs
+          node scripts/test_owner_v128_recent_task_audio.cjs
+          node scripts/test_owner_v129_touch97.cjs
+          node scripts/test_v16_back_navigation.js
+          node scripts/test_owner_v118_back_notes.cjs
+          node scripts/test_course_state_compat.js
+          node scripts/test_owner_v122_content_startup.cjs
+          node scripts/test_pmm_content_server.mjs
+          node scripts/test_pmm_content_server.mjs --single-file
+          bash scripts/test_native_compile.sh
+      - name: Stage checked lossless assets
+        run: python3 optimization/prepare_lossless_assets.py
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-35 build-tools;35.0.0'
+      - name: Build independent DEBUG only, no publishing key
+        run: env -u PMM_KEYSTORE_PATH -u PMM_KEYSTORE_PASSWORD -u PMM_KEY_PASSWORD gradle --no-daemon :app:assembleDebug -PpmmLosslessAssets=true
+      - name: Verify test APK metadata and signature
+        run: |
+          set -euo pipefail
+          apk=app/build/outputs/apk/debug/app-debug.apk
+          bt="$ANDROID_HOME/build-tools/35.0.0"
+          "$bt/apksigner" verify --verbose "$apk"
+          "$bt/zipalign" -c -v 4 "$apk"
+          mkdir -p dist
+          "$bt/aapt" dump badging "$apk" > dist/package.txt
+          grep -F "name='ir.nahj.towhidkarbordi.ownerrebuilddebug'" dist/package.txt
+          grep -F "versionCode='152'" dist/package.txt
+          cp "$apk" dist/Moulla-v152-DEBUG.apk
+          (cd dist && sha256sum Moulla-v152-DEBUG.apk > SHA256SUMS.txt)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Moulla-v152-DEBUG-${{ github.run_id }}
+          path: dist/
+          if-no-files-found: error

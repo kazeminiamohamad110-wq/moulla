@@ -1,0 +1,1 @@
+window.PMM_NAHJ_TRANSCRIPT_ACCEPT({"group":"wisdoms","number":147,"source":"حکمت 147.docx","mode":"explicit-parts","parts":["حکمت 147\nبخش اول:\nمتن: \n\nترجمه:\n\nتفسیر:","بخش دوم:\nمتن: \n\nترجمه:\n\nتفسیر:","بخش سوم:\nمتن: \n\nترجمه:\n\nتفسیر:","بخش چهارم:\nمتن: \n\nترجمه:\n\nتفسیر:","بخش پنجم:\nمتن: \n\nترجمه:\n\nتفسیر:"]});

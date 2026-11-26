@@ -110,7 +110,7 @@ final class PmmMediaSaver {
                 connection.setRequestProperty("Accept",video ? "video/mp4" : "image/jpeg, image/png, image/webp");
                 if (connection.getResponseCode() != HttpURLConnection.HTTP_OK)
                     throw new IOException("Media response unavailable");
-                if (connection.getContentLengthLong() > limit) throw new IOException("Media too large");
+                if (connection.getContentLength() > limit) throw new IOException("Media too large");
                 String contentType = connection.getContentType();
                 mime = contentType == null ? "" :
                     contentType.split(";")[0].trim().toLowerCase(Locale.ROOT);
