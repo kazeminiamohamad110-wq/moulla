@@ -15,6 +15,8 @@ var sections={
   guest_sentence_new:{legacy:'wisdom',name:'یک جمله مهمان مولا'}
 };
 var current=null,shown=false,accepted=0;
+var appliedTexts=Object.create(null),appliedTextItems=[],appliedCatalog=null;
+var textSections=new Set(['nahj_audio','towhid','see_god','kafi']);
 var inMemoryIds=new Set();
 var onlineBySection={};
 Object.keys(sections).forEach(function(k){onlineBySection[k]=[]});
@@ -55,7 +57,7 @@ function ownerAudioUrl(url,section){
  try{
   var u=new URL(url);
   if(u.protocol!=='https:'||u.hostname!=='dl.kazeminia110.ir'||u.port||u.username||u.password||u.search||u.hash)return false;
-  if(section==='kafi')return /^\/Audio\/kafi\/(?:kafi kotobe arbae|kafi(?: |%20)[1-9][0-9]{0,2})\.mp3$/.test(u.pathname);
+  if(section==='kafi')return /^\/Audio\/kafi\/(?:kafi(?: |%20)kotobe(?: |%20)arbae|kafi(?: |%20)[1-9][0-9]{0,2})\.mp3$/.test(u.pathname);
   if(section==='nahj_audio')return /^\/Audio\/nahj-al-balaghe\/tartibi\/(?:khotbe\/khotbe|name\/name|hekmat\/hekmat)(?: |%20)[A-Za-z0-9. &%]+\.mp3$/i.test(u.pathname);
   return false;
  }catch(_){return false}
@@ -75,11 +77,12 @@ function safePhotoUrl(value){
     return u.protocol==='https:'&&u.origin===host&&/^\/media\/[a-f0-9-]{36}$/.test(u.pathname)&&!u.search&&!u.hash;
   }catch(_){return false;}
 }
+function transcriptBytes(value){var n=0;for(var c of value){var cp=c.codePointAt(0);n+=cp<128?1:cp<2048?2:cp<65536?3:4;if(n>128*1024)return n;}return n;}
 function validManifest(value) {
   if(!value||value.schema!==1||!Number.isSafeInteger(value.revision)||value.revision<0||!Array.isArray(value.items)||value.items.length>3000)return false;
   var ids=new Set();
-  return value.items.every(function(item){
-    if(!item||!sections[item.section]||typeof item.id!=='string'||!(/^[0-9a-f-]{36}$/.test(item.id))||
+  var itemsValid=value.items.every(function(item){
+    if(!item||!Object.prototype.hasOwnProperty.call(sections,item.section)||!Number.isSafeInteger(item.revision)||item.revision<1||item.revision>value.revision||typeof item.id!=='string'||!(/^[0-9a-f-]{36}$/.test(item.id))||
       ids.has(item.id)||typeof item.title!=='string'||item.title.trim().length<2||item.title.length>180)return false;
     ids.add(item.id);
     if(item.section==='guest_sentence_new'){
@@ -93,17 +96,31 @@ function validManifest(value) {
       return allowedLink(item.url)||ownerAudioUrl(item.url,item.section);
     return allowedLink(item.url);
   });
+  if(!itemsValid)return false;
+  if(value.transcripts===undefined)return true;
+  if(!value.transcripts||typeof value.transcripts!=='object'||Array.isArray(value.transcripts))return false;
+  return Object.entries(value.transcripts).every(([id,entry])=>{
+    var item=value.items.find(row=>row.id===id);
+    return !!item&&textSections.has(item.section)&&entry&&Number.isSafeInteger(entry.revision)&&entry.revision>=item.revision&&entry.revision<=value.revision&&typeof entry.text==='string'&&entry.text.trim()&&!entry.text.includes('\0')&&transcriptBytes(entry.text)<=128*1024;
+  });
 }
 function faNum(n){return Number(n).toLocaleString('fa-IR')}
+function bundled(item){
+  if(item.section==='videos')return VIDEO_CLIPS.some(v=>v.pmmOwnerId===item.id);
+  if(['towhid','see_god','kafi'].includes(item.section))return DATA[sections[item.section].legacy].some(row=>row.pmmOwnerId===item.id);
+  return false;
+}
 function titleCounts(manifest){
   var counts={};
   manifest.items.forEach(function(item){
-    if(Number(item.revision||0)>accepted)counts[item.section]=(counts[item.section]||0)+1;
+    if(Number(item.revision||0)>accepted&&!bundled(item))counts[item.section]=(counts[item.section]||0)+1;
   });
   var descriptions=Object.keys(counts).filter(function(k){return counts[k]>0}).map(function(k){
     return faNum(counts[k])+' مورد در «'+sections[k].name+'»';
   });
-  return descriptions.length?descriptions:['فهرست مطالب به‌روزرسانی شده است.'];
+  var textCount=Object.values(manifest.transcripts||{}).filter(t=>t.revision>accepted).length;
+  if(textCount)descriptions.push(faNum(textCount)+' متن جلسه جدید یا اصلاح‌شده');
+  return descriptions.length?descriptions:['فهرست مطالب یا متن جلسات به‌روزرسانی شده است.'];
 }
 function showModal(manifest){
   if(shown)return;
@@ -125,10 +142,13 @@ function titleNumber(title){
   return digits?Number(digits[1].replace(/[۰-۹]/g,d=>String(d.charCodeAt(0)-1776))
    .replace(/[٠-٩]/g,d=>String(d.charCodeAt(0)-1632))):0;
 }
+function sameMedia(a,b){
+  try{var x=new URL(a),y=new URL(b);return x.origin===y.origin&&decodeURI(x.pathname).replace(/\/$/,'')===decodeURI(y.pathname).replace(/\/$/,'')&&x.search===y.search&&x.hash===y.hash}catch(_){return a===b}
+}
 function appendNativeLesson(item,target){
   var records=DATA[target];
   if(!Array.isArray(records))throw Error('Native lesson catalog missing: '+target);
-  if(records.some(row=>row.pmmOnlineId===item.id||row.url===item.url))return;
+  if(records.some(row=>row.pmmOnlineId===item.id||row.pmmOwnerId===item.id||sameMedia(row.url,item.url)))return;
   var max=records.reduce((v,row)=>Math.max(v,Number(row.number)||0),0);
   var suggested=titleNumber(item.title);
   var number=suggested>max&&suggested<=500?suggested:max+1;
@@ -147,7 +167,7 @@ function appendNativeNahj(item){
   var records=NAHJ_AUDIO_ITEMS[group];
   if(!Array.isArray(records))throw Error('Nahj owner audio group unavailable');
   if(records.some(row=>row.pmmOnlineId===item.id||
-      (Array.isArray(NAHJ_AUDIO_PARTS[row.id])&&NAHJ_AUDIO_PARTS[row.id].includes(item.url))))return;
+      (Array.isArray(NAHJ_AUDIO_PARTS[row.id])&&NAHJ_AUDIO_PARTS[row.id].some(url=>sameMedia(url,item.url)))))return;
   var number=titleNumber(item.title);
   if(!number){number=records.reduce((n,row)=>Math.max(n,Number(row.number)||0),0)+1;}
   var id='online-'+group+'-'+item.id;
@@ -158,7 +178,7 @@ function pruneStaleEntries(active){
   ['towhid','life','kafi'].forEach(target=>{
    var records=DATA[target];if(!Array.isArray(records))return;
    for(var i=records.length-1;i>=0;i--){
-     if(records[i].pmmOnlineId&&!active.has(records[i].pmmOnlineId))records.splice(i,1);
+     if(!records[i].pmmOwnerId&&records[i].pmmOnlineId&&!active.has(records[i].pmmOnlineId))records.splice(i,1);
    }
   });
   ['sermons','letters','wisdoms'].forEach(group=>{
@@ -171,7 +191,7 @@ function pruneStaleEntries(active){
    }
   });
   for(var i=VIDEO_CLIPS.length-1;i>=0;i--){
-   if(VIDEO_CLIPS[i].pmmOnlineId&&!active.has(VIDEO_CLIPS[i].pmmOnlineId))VIDEO_CLIPS.splice(i,1);
+   if(!VIDEO_CLIPS[i].pmmOwnerId&&VIDEO_CLIPS[i].pmmOnlineId&&!active.has(VIDEO_CLIPS[i].pmmOnlineId))VIDEO_CLIPS.splice(i,1);
   }
   VIDEO_CLIPS.forEach((clip,index)=>{if(clip.pmmOnlineId)clip.number=index+1});
   inMemoryIds.forEach(id=>{if(!active.has(id))inMemoryIds.delete(id)});
@@ -193,6 +213,9 @@ function applyManifest(manifest){
     if(item.section==='nahj_audio'&&!nahjGroup(item))
       throw Error('نوع خطبه/نامه/حکمت مشخص نشده است: '+item.title);
   });
+  var nextCatalog=JSON.stringify(manifest.items);
+  // Text-only updates must not rebuild the player or scroll position.
+  if(appliedCatalog===nextCatalog){appliedTexts=Object.assign(Object.create(null),manifest.transcripts||{});appliedTextItems=manifest.items;return;}
   var active=new Set(manifest.items.map(item=>item.id));
   pruneStaleEntries(active);
   var urls=[],guest=[];
@@ -203,7 +226,7 @@ function applyManifest(manifest){
     if(item.section==='guest_sentence_new'){guest.push(item);return;}
     if(inMemoryIds.has(item.id))return;
     if(item.section==='videos'){
-      if(!VIDEO_CLIPS.some(v=>v.pmmOnlineId===item.id||v.url===item.url))
+      if(!VIDEO_CLIPS.some(v=>v.pmmOnlineId===item.id||v.pmmOwnerId===item.id||sameMedia(v.url,item.url)))
         VIDEO_CLIPS.push({number:VIDEO_CLIPS.length+1,title:item.title,url:item.url,
          tags:'',coverUrl:item.coverUrl||'',pmmOnlineId:item.id});
     }else if(item.section==='nahj_audio'){
@@ -220,6 +243,7 @@ function applyManifest(manifest){
   if(!window.PMM_WISDOM_UI||typeof window.PMM_WISDOM_UI.setOnlineSentences!=='function')
     throw Error('Native wisdom reader not ready');
   window.PMM_WISDOM_UI.setOnlineSentences(guest);
+  appliedTexts=Object.assign(Object.create(null),manifest.transcripts||{});appliedTextItems=manifest.items;appliedCatalog=nextCatalog;
   if(screen==='list'&&['nahj','towhid','life','kafi','clips'].includes(section))render();
   if(screen==='gallery'&&typeof galleryRenderGrid==='function')galleryRenderGrid();
 }
@@ -227,8 +251,16 @@ function receiveManifest(raw){
   var manifest;
   try{manifest=typeof raw==='string'?JSON.parse(raw):raw}catch(_){return;}
   if(!validManifest(manifest))return;
+  if(manifest.revision<accepted||(current&&manifest.revision<current.revision))return;
   current=manifest;
-  if(manifest.revision>accepted){showModal(manifest);return;}
+  if(manifest.revision>accepted){
+    // Do not suppress a deletion or unrelated new record just because some content is bundled.
+    if(manifest.transcripts===undefined&&manifest.items.length&&manifest.items.every(bundled)&&!inMemoryIds.size){
+      try{applyManifest(manifest);accepted=manifest.revision;localStorage.setItem(REVISION_KEY,String(accepted));closeModal()}catch(err){showModal(manifest)}
+      return;
+    }
+    showModal(manifest);return;
+  }
   try{applyManifest(manifest)}catch(err){console.warn('PMM content integration:',err.message)}
 }
 acceptButton.addEventListener('click',function(){
@@ -258,6 +290,12 @@ modal.addEventListener('keydown',function(e){
 });
 window.PMM_CONTENT_UPDATES=Object.freeze({
   receiveManifest:receiveManifest,
+  getTranscript:function(section,id,url){
+    if(!textSections.has(section)||typeof url!=='string'||!url)return null;
+    var matches=appliedTextItems.filter(row=>row.section===section&&sameMedia(row.url,url)&&(!id||row.id===id));
+    if(matches.length!==1)return null;
+    return appliedTexts[matches[0].id]?.text||null;
+  },
   isVisible:function(){return shown},
   acceptedRevision:function(){return accepted},
   getOnlineCounts:function(){return Object.keys(onlineBySection).reduce(function(out,k){out[k]=onlineBySection[k].length;return out},{})}

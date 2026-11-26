@@ -234,7 +234,7 @@ public final class MainActivity extends Activity {
                                   final float rate,final int resumeSecond) {
             if(!PmmKafiAudioService.approved(url)||
                resumeSecond<0||resumeSecond>86400||
-               !Float.isFinite(rate)||rate<0.75f||rate>2f)return;
+               (Float.isNaN(rate)||Float.isInfinite(rate))||rate<0.75f||rate>2f)return;
             runOnUiThread(()->{
                 if(isFinishing()||isDestroyed()||!visibleToUser||web==null||
                    !"file:///android_asset/index.html".equals(web.getUrl()))return;
@@ -265,6 +265,7 @@ public final class MainActivity extends Activity {
                     if(!state.optBoolean("active",false))return;
                     Intent command=new Intent(MainActivity.this,PmmKafiAudioService.class)
                         .setAction(PmmKafiAudioService.ACTION_TOGGLE);
+                    command.putExtra("url",url);
                     startService(command);
                 }catch(Exception ignored){}
             });
@@ -294,7 +295,7 @@ public final class MainActivity extends Activity {
 
         @JavascriptInterface
         public void kafiSpeed(final String url,final float value) {
-            if(!PmmKafiAudioService.approved(url)||!Float.isFinite(value)||
+            if(!PmmKafiAudioService.approved(url)||(Float.isNaN(value)||Float.isInfinite(value))||
                value<0.75f||value>2f)return;
             runOnUiThread(()->{
                 if(isFinishing()||isDestroyed()||!visibleToUser)return;
@@ -303,6 +304,7 @@ public final class MainActivity extends Activity {
                     if(!state.optBoolean("active",false))return;
                     Intent command=new Intent(MainActivity.this,PmmKafiAudioService.class)
                         .setAction(PmmKafiAudioService.ACTION_SPEED);
+                    command.putExtra("url",url);
                     command.putExtra("rate",value);
                     startService(command);
                 }catch(Exception ignored){}
@@ -483,7 +485,7 @@ public final class MainActivity extends Activity {
                 connection.setUseCaches(false);
                 connection.setRequestProperty("Accept", "application/json");
                 if (connection.getResponseCode() != 200) return;
-                if (connection.getContentLengthLong() > PMM_MAX_MANIFEST_BYTES) return;
+                if (connection.getContentLength() > PMM_MAX_MANIFEST_BYTES) return;
                 ByteArrayOutputStream buffer = new ByteArrayOutputStream();
                 try (InputStream input = connection.getInputStream()) {
                     byte[] bytes = new byte[8192];

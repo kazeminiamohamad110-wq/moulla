@@ -3,7 +3,7 @@
  * playlist, WebView duplicate audio or generic URL player. */
 (function(root){
 'use strict';
-const rawPattern=/^https:\/\/dl\.kazeminia110\.ir\/Audio\/(?:kafi\/(?:kafi kotobe arbae|kafi (?:[1-9]|[1-4][0-9]|5[0-4]))|nahj-al-balaghe\/tartibi\/(?:khotbe\/khotbe|name\/name|hekmat\/hekmat) [A-Za-z0-9. &]+)\.mp3$/;
+const rawPattern=/^https:\/\/dl\.kazeminia110\.ir\/Audio\/(?:kafi\/(?:kafi kotobe arbae|kafi [1-9][0-9]{0,2})|nahj-al-balaghe\/tartibi\/(?:khotbe\/khotbe|name\/name|hekmat\/hekmat) [A-Za-z0-9. &]+)\.mp3$/;
 function ownerUrl(value){
  if(typeof value!=='string'||value.length>260)return '';
  let candidate=value;
@@ -141,12 +141,12 @@ function attachNahjCards(cards,groupId,entryId,opts){
   return {card,update};
  });
  if(data.some(x=>!x))return false;
+ const refresh=()=>data.forEach(x=>{if(x.card.isConnected)x.update()});
  const pulse=root.setInterval(()=>{
-  const connected=data.some(x=>x.card.isConnected);
-  if(!connected){root.clearInterval(pulse);return}
-  data.forEach(x=>{if(x.card.isConnected)x.update()});
+  if(!data.some(x=>x.card.isConnected)){root.clearInterval(pulse);root.removeEventListener('pmm:app-foreground',refresh);return}
+  refresh();
  },850);
- root.addEventListener('pmm:app-foreground',()=>data.forEach(x=>x.update()));
+ root.addEventListener('pmm:app-foreground',refresh);
  return true;
 }
 function attachDirect(player,startButton,statusLine,raw,title){
@@ -174,7 +174,7 @@ function attachDirect(player,startButton,statusLine,raw,title){
  startButton.addEventListener('click',()=>{
   const s=status(url);
   if(s.active)toggle(url);
-  else start(url,title,1,s.saved||0);
+  else{let rate=1;try{const chosen=Number(root.localStorage.getItem('pmm_direct_audio_rate_v152'));if([.75,1,1.25,1.5,2].includes(chosen))rate=chosen}catch(_){}start(url,title,rate,s.saved||0)}
   update();root.setTimeout(update,450);
  });
  seekBar.addEventListener('change',()=>{

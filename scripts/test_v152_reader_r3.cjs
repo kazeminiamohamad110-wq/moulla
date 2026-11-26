@@ -1,0 +1,26 @@
+const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('assert/strict');
+const a=path.resolve(__dirname,'../app/src/main/assets');
+const src=fs.readFileSync(path.join(a,'pmm_session_text_v152.js'),'utf8'),css=fs.readFileSync(path.join(a,'pmm_session_text_v152.css'),'utf8');
+let focused=null,stage,card,audio,tools;
+class E {
+ constructor(tag){this.tagName=tag;this.children=[];this.parent=null;this.hidden=false;this.dataset={};this.attrs={};this.listeners={};this.styles={};this.style={setProperty:(k,v)=>this.styles[k]=v};this.classList={add:(v)=>{this.className=(this.className||'')+' '+v},toggle:()=>{}};this.scrollTop=0;this.scrollHeight=1000;this.disabled=false;this.textContent='';}
+ get isConnected(){return this===stage||!!this.parent?.isConnected}
+ append(...nodes){for(const n of nodes){n.remove();this.children.push(n);n.parent=this}}
+ remove(){if(this.parent){this.parent.children=this.parent.children.filter(x=>x!==this);this.parent=null}}
+ setAttribute(k,v){this.attrs[k]=v}
+ addEventListener(k,fn){(this.listeners[k]??=[]).push(fn)}
+ emit(k,extra={}){let prevented=false;let event={target:this,preventDefault(){prevented=true},stopPropagation(){},...extra};for(const f of this.listeners[k]||[])f(event);return prevented}
+ click(){this.emit('click')}
+ focus(){focused=this}
+ querySelector(sel){if(this===card&&sel==='audio')return audio;if(this===card&&sel==='.nahj-part-speed')return this.children.find(x=>x.className?.includes('nahj-part-speed'))||null;return null}
+ querySelectorAll(){return []}
+ getBoundingClientRect(){return this===stage?stage.rect:this.className==='pmm-session-tools'?stage.toolRect:{left:0,width:0}}
+}
+const storage={},doc={createElement:t=>new E(t),getElementById:id=>id==='stage'?stage:null,get activeElement(){return focused}},win={};let renderCalls=0,backCalls=0;const calls=[];const ctx=vm.createContext({document:doc,window:win,localStorage:{getItem:k=>storage[k],setItem:(k,v)=>storage[k]=v},URL,screen:'home',section:'',render(){renderCalls++},goBack(){backCalls++},setTimeout,clearTimeout});
+vm.runInContext(src.replace(/\}\)\(\);\s*$/,'window.testApi={mount,fitReader};})();'),ctx);
+const api=win.testApi;
+for(const [width,height] of [[360,640],[393,873],[412,915],[768,1024]]){
+ stage=new E('main');stage.rect={left:10,width,height};stage.toolRect={left:10+width*.16,width:width*.68};card=new E('section');stage.append(card);audio=new E('audio');audio.dataset.src='https://example.test/1.mp3';for(const name of ['play','pause','load'])audio[name]=()=>calls.push(name);card.append(audio);const speed=new E('div');speed.className='nahj-part-speed';card.append(speed);api.mount(card,null);
+ tools=card.children.find(x=>x.className==='pmm-session-tools');const text=tools.children.find(x=>x.attrs['aria-label']==='متن');assert(text.className.includes('pmm-text-trigger'));const before=card.children.slice();text.click();const layer=stage.children.find(x=>x.className==='pmm-reader-layer');assert(layer&&!layer.hidden);assert.equal(parseFloat(layer.styles['--pmm-reader-width']),68);assert(Math.abs(parseFloat(layer.styles['--pmm-reader-left'])-16)<1e-9);const panel=layer.children[0],head=panel.children[0],body=panel.children[1],size=head.children[1],close=head.children[2];assert.equal(focused,close);assert.equal(panel.attrs['aria-modal'],'true');assert.equal(text.attrs['aria-expanded'],'true');for(let i=0;i<5;i++)size.children[0].click();assert.equal(panel.styles['--pmm-reading-size'],'32px');assert.equal(storage.pmm_transcript_reading_size_v152,'32');assert.equal(size.children[0].disabled,true);size.children[1].click();assert.equal(panel.styles['--pmm-reading-size'],'28px');assert(panel.emit('copy'));ctx.goBack();assert(!layer.isConnected);assert.equal(text.attrs['aria-expanded'],'false');assert.equal(focused,text);assert.equal(backCalls,0);assert.deepEqual(card.children,before);assert.equal(audio.parent,card);assert.deepEqual(calls,[]);text.click();close.click();assert(!layer.isConnected);assert.deepEqual(calls,[]);text.click();layer.emit('click');assert(!layer.isConnected);assert.deepEqual(calls,[]);text.click();ctx.render();assert(!layer.isConnected);assert.equal(audio.parent,card);console.log(`PASS ${width}x${height}: overlay width 68%, close/back/outside, size, copy-block, same audio/card, no audio commands (simulated DOM)`);
+}
+assert.match(css,/top:1\.5%;bottom:1\.5%/);assert.match(css,/backdrop-filter:blur\(5px\) brightness\(1\.12\)/);assert.match(css,/pmm-session-tool:active:not\(\.pmm-owner-touch97\)\{transform:scale\(\.97\)/);assert.match(css,/\.pmm-transcript-scroll\{[^}]*overflow-y:auto/);assert.equal(calls.length,0);console.log('PASS CSS declarations: 97% stage height, blur+brightness, internal scrolling, 97% press fallback. Geometry on real device not tested.');

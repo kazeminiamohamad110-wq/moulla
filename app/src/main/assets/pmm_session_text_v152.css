@@ -1,0 +1,38 @@
+/* Shabnam WOL (Saber Rastikerdar, SIL OFL 1.1), bundled for offline reading. */
+@font-face{font-family:PMMShabnam;src:url('fonts/Shabnam-WOL.woff2') format('woff2');font-style:normal;font-weight:400;font-display:swap}
+#stage .pmm-session-tools{display:flex;align-items:center;gap:7px;direction:rtl;margin:8px 0 0}
+#stage .pmm-session-tool{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:40px;padding:4px 12px;border:1px solid #b78b4f;border-radius:9px;background:linear-gradient(#fff7df,#efd8a5);color:#073b78;font:inherit;font-weight:800;cursor:pointer}
+#stage .pmm-session-tool svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8}
+#stage .pmm-session-tool[aria-expanded="true"]{background:#083f73;color:#fff4c6}
+#stage .pmm-session-speed[hidden],#stage .pmm-session-transcript[hidden]{display:none!important}
+#stage .pmm-session-transcript{box-sizing:border-box;display:flex;flex-direction:column;width:100%;height:auto;min-height:0;max-height:none;margin:0;overflow:hidden;background:rgba(255,247,223,.86);border:1px solid #b78b4f;border-radius:10px;direction:rtl;animation:pmm-text-open .16s ease-out}
+#stage .pmm-transcript-header{display:flex;flex:none;align-items:center;justify-content:space-between;padding:3px 8px;border-bottom:1px solid #d9bd86;color:#073b78;font-weight:800}
+#stage .pmm-transcript-header button{min-height:36px;min-width:36px;padding:1px 8px}
+#stage .pmm-transcript-scroll{min-height:0;flex:1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;padding:8px 10px;color:#342a18;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.9;font-family:PMMShabnam,var(--pmm-text-font,sans-serif);font-size:var(--pmm-reading-size,16px);text-align:start}
+#stage .pmm-session-transcript,#stage .pmm-session-transcript *{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+@keyframes pmm-text-open{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){#stage .pmm-session-transcript{animation:none}}
+
+/* Reader settings are local to the transcript; original player dimensions stay unchanged. */
+#stage .pmm-transcript-header{gap:4px;justify-content:flex-start}
+#stage .pmm-transcript-header .pmm-transcript-title{flex:1;min-width:0}
+#stage .pmm-transcript-header .pmm-transcript-size-controls{display:flex;align-items:center;gap:3px;flex:none;direction:rtl}
+#stage .pmm-transcript-header .pmm-transcript-size-controls button{font-size:14px;line-height:1;min-width:32px;min-height:36px;padding:2px 5px;white-space:nowrap}
+#stage .pmm-transcript-size-controls button:disabled{opacity:.45;cursor:default}
+#stage .pmm-transcript-header .pmm-transcript-close{margin-inline-start:2px;flex:none}
+
+/* R3: stage-wide reading mode, original card width; background stays mounted. */
+#stage > .pmm-reader-layer{position:absolute;inset:0;z-index:2400;overflow:hidden;isolation:isolate;background:rgba(255,247,225,.16);-webkit-backdrop-filter:blur(3px) brightness(1.08);backdrop-filter:blur(3px) brightness(1.08);touch-action:pan-y;overscroll-behavior:contain}
+#stage > .pmm-reader-layer[hidden]{display:none!important}
+#stage > .pmm-reader-layer > .pmm-session-transcript{position:absolute;top:1.5%;bottom:1.5%;left:var(--pmm-reader-left,3%);width:var(--pmm-reader-width,94%);height:auto;max-height:none;margin:0;box-shadow:0 4px 20px #47331359;touch-action:pan-y;animation:pmm-text-open .16s ease-out}
+#stage .pmm-reader-layer .pmm-transcript-header{padding:5px 7px;background:linear-gradient(rgba(255,247,223,.94),rgba(242,223,169,.90))}
+#stage .pmm-reader-layer .pmm-transcript-scroll{touch-action:pan-y;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#b58a43 #f9edd1}
+#stage .pmm-session-tool{box-shadow:0 2px 3px #7658202b;-webkit-tap-highlight-color:transparent}
+#stage .pmm-session-tool:active{filter:brightness(.94);box-shadow:inset 0 2px 3px #78542242}
+#stage .pmm-session-tool:active:not(.pmm-owner-touch97){transform:scale(.97) translateY(1px)}
+#stage .pmm-session-tool.pmm-owner-touch97:active{transform:none}
+#stage .pmm-session-tool:focus-visible{outline:2px solid #073b78;outline-offset:2px}
+@supports not ((backdrop-filter:blur(3px)) or (-webkit-backdrop-filter:blur(3px))){
+ #stage > .pmm-reader-layer{background:rgba(255,247,225,.30)}
+}
+@media(prefers-reduced-motion:reduce){#stage .pmm-session-tool:active{transform:none}#stage > .pmm-reader-layer > .pmm-session-transcript{animation:none}}

@@ -1,0 +1,59 @@
+PASS candidate: 1218 locked runtime/config files, 1193 assets, 201 original clip posters, all 1016 text part hashes, no missing v150 runtime source.
+PASS inline JS syntax: 8 blocks; all standalone top-level app and Worker modules parsed.
+=== test_v152_transcript_audio.cjs
+PASS: 796 data files / 1016 text parts; 982 of 1019 audio positions map by catalog number/count; 37 intentionally withheld.
+PASS: loader concurrent/cache, exact part 3, joint text, mismatch, missing, timeout/late response, close-race, path validation.
+PASS: Kafi 55–999 approved, untrusted URLs rejected, gear only on audio card with speed controls (static guard).
+=== test_v152_bundled_content.cjs
+PASS: actual archived sessions 18/19 are embedded once; later online session appended, old revision rejected, bundled sessions preserved and invalid item revision refused.
+=== test_owner_all_native_content_parity.cjs
+PASS: all seven sections reuse native art, playback/catalog, photo wheel, reading panels; no duplication or lost originals
+=== test_owner_online_life_visual_match.cjs
+PASS: session 18 and 19 use the exact native golden session rows, with no separate fresh-content card.
+=== test_owner_v124_seven_fixes.cjs
+PASS: all seven owner defects checked; no remote media before Play, background service routed and consent protected
+=== test_owner_v128_recent_task_audio.cjs
+PASS: Recents swipe stops native audio; Home, Back/Exit and screen-off untouched; progress synced
+=== test_owner_v129_touch97.cjs
+PASS: exact approved touch97 CSS + delegated pointer, keyboard, reduced-motion, no duplicate handler
+=== test_v16_back_navigation.js
+PASS: 7 routes; no ghost Exit; Android back cannot finish; explicit Exit only
+=== test_owner_v118_back_notes.cjs
+PASS: v118 Persian Back; complete audio-linked notes; click-only audio; no changes to listening threshold
+=== test_course_state_compat.js
+PASS: existing 1019-audio progress, notes and plan survive v118 -> v119 migration.
+PASS: previously saved course reminder time restored after update.
+=== test_owner_v122_content_startup.cjs
+PASS: owner public-manifest integration; no network before consent; notification consent independent; online content offered and applied only by user; no autoplay or untrusted URLs.
+=== test_v152_worker.mjs
+PASS worker.js: capped JSON bodies, encoded Kafi links, URL restriction, shared image retained until last reference removed.
+PASS cloudflare-dashboard-single-file.js: capped JSON bodies, encoded Kafi links, URL restriction, shared image retained until last reference removed.
+PASS: free-tier KV-only auth, publishing, image upload/streaming/removal, no-store headers, revisions
+PASS: free-tier KV-only auth, publishing, image upload/streaming/removal, no-store headers, revisions
+PASS: all-seven offline fixture, image hash deduplication, same revision immutability, rollback rejection, append-only historical records.
+PASS: all four native reminder Java classes compile against Android API-shaped stubs.
+PASS: wisdom quiet activation 03:42 -> 07:00
+PASS: wisdom initial morning notice today 7am
+PASS: wisdom activated 17:23 -> next day same clock
+PASS: never a quiet period start for wisdom
+PASS: course 05:00 permitted
+PASS: course 23:59 permitted
+PASS: course 00:00 end of day permitted
+PASS: course 04:59 rejected
+PASS: course 00:01 rejected
+PASS: course invalid hour rejected
+PASS: course end of day midnight is next day
+PASS: course daily next 08:15
+PASS: weekly matching weekday today
+PASS: weekly matching weekday passed -> seven days
+All reminder-clock tests passed.
+/mnt/data/moulla152_work/moulla-main/scripts/owner_version_inventory.py:185: SyntaxWarning: invalid escape sequence '\`'
+  f"- Active main SHA: \`{report['generated_for_main_sha']}\`",
+/mnt/data/moulla152_work/moulla-main/scripts/owner_version_inventory.py:185: SyntaxWarning: invalid escape sequence '\`'
+  f"- Active main SHA: \`{report['generated_for_main_sha']}\`",
+PASS: owner governance classification and active Git blob integrity fail-closed tests
+/mnt/data/moulla152_work/moulla-main/scripts/owner_cleanup_plan.py:100: SyntaxWarning: invalid escape sequence '\`'
+  f"- main: \`{result['active_main_sha']}\`\n"
+/mnt/data/moulla152_work/moulla-main/scripts/owner_cleanup_plan.py:100: SyntaxWarning: invalid escape sequence '\`'
+  f"- main: \`{result['active_main_sha']}\`\n"
+PASS: cleanup plan is read-only and fail-closed
