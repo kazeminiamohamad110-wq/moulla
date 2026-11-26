@@ -2,7 +2,7 @@ name: Import owner-approved Moulla R5 lossless source
 on:
   push:
     branches: [transfer/owner-v152-r5-lossless]
-    paths: [Moulla-R5-Lossless-Delta.zip]
+    paths: [Moulla-R5-Lossless-Delta.zip, .github/workflows/owner-v152-lossless-import.yml]
 permissions:
   contents: read
 concurrency:
@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   validate-build:
-    if: github.ref == 'refs/heads/transfer/owner-v152-r5-lossless'
+    if: github.ref == 'refs/heads/transfer/owner-v152-r5-lossless' && (github.event.head_commit.message != 'Remove temporary import workflow')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
@@ -121,6 +121,26 @@ jobs:
           set -euo pipefail
           git config user.name 'moulla-owner-lossless-import[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          # The Actions token cannot register workflow files. Preserve the exact
+          # verified bytes in a temporary non-workflow path for the owner connector.
+          python3 - <<'PYCODE'
+          import hashlib,json,zipfile,pathlib,subprocess
+          with zipfile.ZipFile('Moulla-R5-Lossless-Delta.zip') as z:
+              m=json.loads(z.read('manifest.json'))['files']
+              names=[n for n in m if n.startswith('.github/workflows/')]
+              assert names==['.github/workflows/owner-v152-candidate-ci.yml'],names
+              for n in names:
+                  p=pathlib.Path(n)
+                  assert m[n]['before'] is None
+                  v=p.read_bytes()
+                  assert hashlib.sha256(v).hexdigest()==m[n]['after']
+                  t=pathlib.Path('r5-import-staging')/p.name
+                  t.parent.mkdir(exist_ok=True)
+                  t.write_bytes(v)
+                  subprocess.run(['git','add','-f',str(t)],check=True)
+                  subprocess.run(['git','rm','-f','--',n],check=True)
+                  print('Deferred workflow SHA256:',n,m[n]['after'])
+          PYCODE
           git rm -- Moulla-R5-Lossless-Delta.zip
           git commit -m 'Integrate verified R5 and pixel-exact optional lossless assets'
           git push origin HEAD:refs/heads/transfer/owner-v152-r5-lossless
