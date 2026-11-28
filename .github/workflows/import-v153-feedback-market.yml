@@ -1,0 +1,143 @@
+name: Import v153 feedback patch and build signed market APK
+on:
+  push:
+    branches: [release/owner-v153-feedback-market]
+    paths: [Moulla-v153-Feedback-PATCH.zip]
+permissions:
+  contents: write
+concurrency:
+  group: moulla-v153-feedback-market
+  cancel-in-progress: false
+jobs:
+  import-test-sign:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: release/owner-v153-feedback-market
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Verify base and apply exact owner patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor 7dce06f51f7d0dfad1f520cef23da5dc954300f3 HEAD
+          echo "55938555fd123fe00fd7a65dd87967cb060e8afc7130b823762a46378f41759c  Moulla-v153-Feedback-PATCH.zip" | sha256sum -c -
+          python3 - <<'PY'
+          import zipfile,pathlib
+          with zipfile.ZipFile('Moulla-v153-Feedback-PATCH.zip') as z:
+              assert z.testzip() is None
+              prefix='Moulla-v153-Feedback-Patch/'
+              names=z.namelist()
+              assert len(names)==19 and all(n.startswith(prefix) for n in names)
+              expected={'README.md','app/build.gradle','app/src/main/assets/index.html','online-content/worker.js','online-content/cloudflare-dashboard-single-file.js','online-content/README_FA.md','design/owner-active-version.json','design/owner-v153-candidate-lock.json','docs/OWNER_V153_FEEDBACK_HANDOFF_FA.md','docs/OWNER_V153_IMPLEMENTATION_REPORT_FA.md','.github/workflows/build-signed-release.yml','.github/workflows/owner-cloudflare-live-deploy.yml','.github/workflows/owner-v153-feedback-ci.yml','scripts/build_cloudflare_single_file.mjs','scripts/verify_owner_v153_candidate.py','scripts/test_v153_feedback.mjs','scripts/test_v153_feedback_ui.cjs','scripts/run_v153_local_checks.sh','BASE.txt'}
+              actual={n[len(prefix):] for n in names}
+              assert actual==expected,(actual^expected)
+              assert 'Apply over the v152 R5 source tree' in z.read(prefix+'BASE.txt').decode()
+              for n in sorted(expected-{'BASE.txt'}):
+                  out=pathlib.Path(n);out.parent.mkdir(parents=True,exist_ok=True);out.write_bytes(z.read(prefix+n))
+          PY
+          git rm -- Moulla-v153-Feedback-PATCH.zip
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify v153 source and feedback APIs
+        run: |
+          set -euo pipefail
+          python3 scripts/verify_owner_v153_candidate.py
+          node scripts/build_cloudflare_single_file.mjs
+          git diff --exit-code -- online-content/cloudflare-dashboard-single-file.js
+          node scripts/test_v153_feedback.mjs
+          node scripts/test_v153_feedback_ui.cjs
+          node scripts/test_v152_worker.mjs
+          node scripts/test_v152_online_transcripts.mjs
+          node scripts/test_pmm_content_server.mjs
+          node scripts/test_pmm_content_server.mjs --single-file
+      - name: Run R5 regression suite
+        run: |
+          set -euo pipefail
+          for t in test_v152_transcript_audio.cjs test_v152_bundled_content.cjs test_owner_all_native_content_parity.cjs test_owner_online_life_visual_match.cjs test_owner_v124_seven_fixes.cjs test_owner_v128_recent_task_audio.cjs test_owner_v129_touch97.cjs test_v16_back_navigation.js test_owner_v118_back_notes.cjs test_course_state_compat.js test_owner_v122_content_startup.cjs test_v152_reader_r4.cjs; do node "scripts/$t"; done
+          python3 scripts/test_v152_archive.py
+          bash scripts/test_native_compile.sh
+          python3 scripts/verify_owner_v153_candidate.py
+      - name: Stage lossless assets
+        run: |
+          python3 -m pip install pillow
+          python3 optimization/prepare_lossless_assets.py
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+      - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - name: Require signing secrets
+        env:
+          KEY_DATA: ${{ secrets.PMM_KEYSTORE_BASE64 }}
+          STORE_PASS: ${{ secrets.PMM_KEYSTORE_PASSWORD }}
+          EXPECTED_CERT: ${{ secrets.PMM_EXPECTED_CERT_SHA256 }}
+        run: |
+          set -euo pipefail
+          test -n "$KEY_DATA" || { echo 'Missing PMM_KEYSTORE_BASE64'; exit 1; }
+          test -n "$STORE_PASS" || { echo 'Missing PMM_KEYSTORE_PASSWORD'; exit 1; }
+          test -n "$EXPECTED_CERT" || { echo 'Missing PMM_EXPECTED_CERT_SHA256'; exit 1; }
+      - name: Restore owner key
+        env:
+          KEY_DATA: ${{ secrets.PMM_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s' "$KEY_DATA" | base64 --decode > "$RUNNER_TEMP/release-keystore"
+          test -s "$RUNNER_TEMP/release-keystore"
+      - name: Build signed market APK
+        env:
+          PMM_KEYSTORE_PATH: ${{ runner.temp }}/release-keystore
+          PMM_KEYSTORE_PASSWORD: ${{ secrets.PMM_KEYSTORE_PASSWORD }}
+          PMM_KEYSTORE_ALIAS: ${{ secrets.PMM_KEYSTORE_ALIAS }}
+          PMM_KEY_PASSWORD: ${{ secrets.PMM_KEY_PASSWORD }}
+          PMM_KEYSTORE_TYPE: ${{ secrets.PMM_KEYSTORE_TYPE }}
+        run: gradle --no-daemon :app:assembleRelease -PpmmLosslessAssets=true
+      - name: Verify package, version, alignment and signature
+        env:
+          EXPECTED_CERT: ${{ secrets.PMM_EXPECTED_CERT_SHA256 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=app/build/outputs/apk/release/app-release.apk
+          bt="$ANDROID_HOME/build-tools/35.0.0"
+          "$bt/apksigner" verify --verbose --print-certs "$apk" | tee "$RUNNER_TEMP/cert.txt"
+          "$bt/zipalign" -c -v 4 "$apk"
+          "$bt/aapt" dump badging "$apk" > "$RUNNER_TEMP/package.txt"
+          grep -F "name='ir.nahj.towhidkarbordi'" "$RUNNER_TEMP/package.txt"
+          grep -F "versionCode='153'" "$RUNNER_TEMP/package.txt"
+          grep -F "versionName='1.0.3'" "$RUNNER_TEMP/package.txt"
+          actual="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$RUNNER_TEMP/cert.txt" | head -1 | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')"
+          expected="$(printf '%s' "$EXPECTED_CERT" | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')"
+          test -n "$actual" && test "$actual" = "$expected"
+          mkdir -p dist
+          cp "$apk" dist/PayeMenbareMola-v153-MARKET-SIGNED.apk
+          cp "$RUNNER_TEMP/cert.txt" dist/SIGNING-CERTIFICATE.txt
+          cp "$RUNNER_TEMP/package.txt" dist/PACKAGE-METADATA.txt
+          (cd dist && sha256sum PayeMenbareMola-v153-MARKET-SIGNED.apk > SHA256SUMS.txt)
+      - name: Commit verified source
+        run: |
+          set -euo pipefail
+          git config user.name 'moulla-v153-release[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add README.md app/build.gradle app/src/main/assets/index.html online-content/worker.js online-content/cloudflare-dashboard-single-file.js online-content/README_FA.md design/owner-active-version.json design/owner-v153-candidate-lock.json docs/OWNER_V153_FEEDBACK_HANDOFF_FA.md docs/OWNER_V153_IMPLEMENTATION_REPORT_FA.md .github/workflows/build-signed-release.yml .github/workflows/owner-cloudflare-live-deploy.yml .github/workflows/owner-v153-feedback-ci.yml scripts/build_cloudflare_single_file.mjs scripts/verify_owner_v153_candidate.py scripts/test_v153_feedback.mjs scripts/test_v153_feedback_ui.cjs scripts/run_v153_local_checks.sh
+          git commit -m "Integrate verified v153 feedback feature and signed market release"
+          git push origin HEAD:refs/heads/release/owner-v153-feedback-market
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PayeMenbareMola-v153-MARKET-SIGNED
+          path: dist/
+          if-no-files-found: error
+      - name: Remove temporary signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release-keystore"
