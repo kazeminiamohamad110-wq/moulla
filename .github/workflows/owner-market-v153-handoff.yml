@@ -1,0 +1,136 @@
+name: Owner R5 v153 official-package unsigned market handoff
+on:
+  push:
+    branches: [release/owner-market-v153-20261128]
+    paths: [.github/workflows/owner-market-v153-handoff.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-market-handoff:
+    if: github.ref == 'refs/heads/release/owner-market-v153-20261128'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Verify exact approved R5 source, original resources and history
+        shell: bash
+        run: |
+          set -euo pipefail
+          base=7dce06f51f7d0dfad1f520cef23da5dc954300f3
+          git merge-base --is-ancestor "$base" HEAD
+          git diff --name-only "$base" HEAD | grep -Fx '.github/workflows/owner-market-v153-handoff.yml'
+          test "$(git diff --name-only "$base" HEAD | wc -l)" -eq 1
+          bash scripts/run_v152_local_checks.sh
+          python3 -m pip install pillow
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from PIL import Image
+          m=json.load(open('optimization/lossless-assets.json'))
+          assert len(m['images'])==36
+          for x in m['images']:
+              with Image.open(Path('app/src/main/assets')/x['original']) as a, Image.open(Path('optimization/derived')/x['optimized']) as b:
+                  a=a.convert('RGBA'); b=b.convert('RGBA')
+                  assert a.size==b.size and a.tobytes()==b.tobytes(),x['original']
+          print('PASS: 36 pixel-exact conversions')
+          PY
+          python3 optimization/prepare_lossless_assets.py
+          mkdir -p handoff
+          git rev-parse HEAD > handoff/BUILD-COMMIT.txt
+          echo "$base" > handoff/R5-SOURCE-COMMIT.txt
+      - name: Inspect current public owner manifest read-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,importlib.util
+          spec=importlib.util.spec_from_file_location('archive','scripts/archive_owner_all_sections_v152.py')
+          m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+          out=pathlib.Path('handoff');report={'status':'unavailable','bundled_source_revision':2}
+          try:
+              raw=m.get(m.ORIGIN+'/api/manifest',m.MAX)
+              manifest=json.loads(raw)
+              result=m.archive(manifest,out/'live-content-archive',lambda i:m.get(m.ORIGIN+'/media/'+i,m.IMAGE_MAX))
+              assert result['revision']>=2,'Unexpected revision rollback'
+              (out/'live-manifest.json').write_bytes(raw)
+              from collections import Counter
+              report={'status':'verified','live_revision':result['revision'],'items':len(result['activeIds']),'sections':dict(Counter(i['section'] for i in manifest['items'])),'transcripts':len(manifest.get('transcripts',{})),'bundled_source_revision':2,'newer_content_available_via_existing_online_update':result['revision']>2}
+          except Exception as e:
+              report['reason']=str(e)[:250]
+              print('WARNING: live public manifest not fully verified; build uses locked R5 baseline, not fabricated updates.')
+          (out/'LIVE-CONTENT-STATUS.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
+          print(json.dumps(report,ensure_ascii=False))
+          PY
+      - name: Stage market identity and unsigned release configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib,re
+          p=pathlib.Path('app/build.gradle');s=p.read_text()
+          assert len(re.findall(r'\bversionCode\s+152\b',s))==1
+          s=re.sub(r'\bversionCode\s+152\b','versionCode 153',s,count=1)
+          assert s.count("versionName '1.0.2'")==1
+          s=s.replace("versionName '1.0.2'","versionName '1.0.3'",1)
+          assert s.count('signingConfig signingConfigs.release')==1
+          s=s.replace('signingConfig signingConfigs.release','// unsigned handoff; owner signs outside CI',1)
+          p.write_text(s)
+          PY
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-35 build-tools;35.0.0'
+      - name: Build real market release APK from source
+        shell: bash
+        run: |
+          set -euo pipefail
+          env -u PMM_KEYSTORE_PATH -u PMM_KEYSTORE_PASSWORD -u PMM_KEY_PASSWORD gradle --no-daemon :app:assembleRelease -PpmmLosslessAssets=true
+      - name: Verify official package, version, unsigned state and all embedded assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=app/build/outputs/apk/release/app-release-unsigned.apk
+          test -s "$apk"
+          bt="$ANDROID_HOME/build-tools/35.0.0"
+          "$bt/aapt" dump badging "$apk" > handoff/PACKAGE-METADATA.txt
+          grep -F "name='ir.nahj.towhidkarbordi'" handoff/PACKAGE-METADATA.txt
+          grep -F "versionCode='153'" handoff/PACKAGE-METADATA.txt
+          grep -F "versionName='1.0.3'" handoff/PACKAGE-METADATA.txt
+          if "$bt/apksigner" verify "$apk"; then echo 'Unexpected signature: stop'; exit 1; fi
+          python3 - <<'PY'
+          import json,zipfile,hashlib
+          m=json.load(open('optimization/lossless-assets.json'))
+          with zipfile.ZipFile('app/build/outputs/apk/release/app-release-unsigned.apk') as z:
+              assert z.testzip() is None
+              actual={n[7:]:hashlib.sha256(z.read(n)).hexdigest() for n in z.namelist() if n.startswith('assets/') and not n.endswith('/')}
+              assert actual==m['staged_assets']
+              assert sum(n.startswith('images/clips_posters/') for n in actual)==201
+              assert sum(n.startswith('pmm-transcripts/') and n.endswith('.js') for n in actual)==796
+              print('PASS: exact staged assets',len(actual),'and all 201 posters')
+          PY
+          cp "$apk" handoff/Moulla-v153-MARKET-UNSIGNED.apk
+          cp "$bt/lib/apksigner.jar" handoff/apksigner.jar
+          (cd handoff && sha256sum Moulla-v153-MARKET-UNSIGNED.apk > SHA256SUMS.txt)
+          echo 'NOT a publishable signed update. Use the SAME signing identity as the currently published Bazaar APK. Check versionCode > published versionCode.' > handoff/SIGNING-REQUIRED.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Moulla-v153-MARKET-UNSIGNED-${{ github.run_id }}
+          path: handoff/
+          if-no-files-found: error
+          retention-days: 30
