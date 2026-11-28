@@ -3,6 +3,7 @@ on:
   push:
     branches: [release/owner-v153-feedback-market]
     paths: [Moulla-v153-Feedback-PATCH.zip]
+  workflow_dispatch:
 permissions:
   contents: write
 concurrency:
